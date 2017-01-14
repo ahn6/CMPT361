@@ -73,3 +73,27 @@ void Client::draw_rect(int x1, int y1, int x2, int y2, unsigned int color) {
         }
     }
 }
+
+//============================================================
+void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color) {
+
+	//TODO: Implement
+}
+
+//============================================================
+void Client::lineDrawer_Bresenham(int x1, int y1, int x2, int y2, unsigned int color) {
+
+	//TODO: Implement
+}
+
+//============================================================
+void Client::lineDrawer_Alternate(int x1, int y1, int x2, int y2, unsigned int color) {
+
+	//TODO: Implement
+}
+
+//============================================================
+void Client::antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int color) {
+
+	//TODO: Implement
+}
