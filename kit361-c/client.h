@@ -38,6 +38,13 @@ private:
 	// Antialias Line Renderer
 	//============================================================
 	void antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int color);
+
+	//============================================================
+	// Possible Tests
+	//============================================================
+	void panelTests(const int currentPage);
 };
+
+
 
 #endif // CLIENT_H
