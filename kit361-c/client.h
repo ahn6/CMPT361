@@ -2,18 +2,29 @@
 #define CLIENT_H
 #include "drawable.h"
 #include "pageturner.h"
+#include <tuple>
 
+typedef enum {ONE, TWO, THREE, FOUR} Panel;
 class Client : public PageTurner
 {
 public:
     Client(Drawable *drawable);
     void nextPage();
 
+	// Helper Functions
+	
+	//============================================================
+	// Calcuate the centre of each panel
+	//
+	// Returns (x,y) as the centre of the pixel
+	//============================================================
+	std::tuple<int, int> panelCentre(int x1, int y1, int x2, int y2);
+
 private:
     Drawable *drawable;
     void draw_rect(int x1, int y1, int x2, int y2, unsigned int color);
 
-	// TODO: Add stubs for each panel
+	// TODO [COMPLETE]: Add stubs for each panel
 	// DDA
 	// Bresenham's
 	// Alternating line drawers between DDA, Bresham's
@@ -42,7 +53,29 @@ private:
 	//============================================================
 	// Possible Tests
 	//============================================================
+
+	//============================================================
+	// Main interface to interact with the tests
 	void panelTests(const int currentPage);
+
+	//============================================================
+	void starBurstTest(int centreX, int centreY, Panel whichPanel);
+
+	//============================================================
+	void parallelogramTest(Panel whichPanel);
+
+	//============================================================
+	void randomTest(Panel whichPanel);
+
+	//============================================================
+	void filledPolygonsTest(Panel whichPanel);
+
+	//============================================================
+	void alteredFilledPolygonsTest(Panel whichPanel);
+
+
+
+
 };
 
 

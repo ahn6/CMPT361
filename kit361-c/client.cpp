@@ -76,6 +76,20 @@ void Client::draw_rect(int x1, int y1, int x2, int y2, unsigned int color) {
 }
 
 //============================================================
+// Helper Functions
+//============================================================
+
+//============================================================
+// This will calculate the centre of a specific panel
+// Returns the centre of the panel (x,y)
+std::tuple<int, int> Client::panelCentre(int x1, int y1, int x2, int y2) {
+	const int xDifference = std::abs(x2 - x1);
+	const int yDifference = std::abs(y2 - y1);
+
+	return std::make_tuple((xDifference / 2), (yDifference / 2));
+}
+
+//============================================================
 // How does DDA work?
 // 1) Plots initial points
 // 2) (x, round(y)) = ROUND(y)
@@ -120,33 +134,89 @@ void Client::antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int
 // All possible tests that is required by the assignment
 // Currently placed here.. because it outputs something
 // TODO: Figure out how to output the tests properly
+// 
+// Panel One: DDA
+// Panel Two: Bresenham
+// Panel Three: Alternating
+// Panel Four: AntiAlias
+
+//============================================================
+void Client::starBurstTest(int centreX, int centreY, Panel whichPanel) {
+	// TODO: Implement "starburst" test
+}
+
+//============================================================
+void Client::parallelogramTest(Panel whichPanel) {
+	// TODO: Implement the "parallelogram" test
+}
+
+//============================================================
+void Client::randomTest(Panel whichPanel) {
+	// TODO: Implement the "random" test
+}
+
+//============================================================
+void Client::filledPolygonsTest(Panel whichPanel) {
+	// TODO: Implement filled polygons
+}
+
+//============================================================
+void Client::alteredFilledPolygonsTest(Panel whichPanel) {
+	// TODO: Implement altered version of filled polygons
+}
 
 void Client::panelTests(const int pageNumber) {
 
 	// TODO: Create seperate functions that does all testing
+
+	// PanelOne: (50,50) & (350,350)
+	// PanelTwo: (400,50) & (700,350)
+	// PanelThree: (50, 400) & (350,700)
+	// PanelFour: (400,400) & (700,700)
+	const std::tuple<int, int> panelOne = panelCentre(50, 50, 350, 350);
+	const std::tuple<int, int> panelTwo = panelCentre(400, 50, 750, 350);
+	const std::tuple<int, int> panelThree = panelCentre(50, 400, 350, 700);
+	const std::tuple<int, int> panelFour = panelCentre(400, 400, 700, 700);
+
 	switch (pageNumber) {
 		
 	case 1:
-		// TODO: Implement "starburst" test
 		// Determine the center of the each panel
-		// 1: std::tuple<int, int, int, int> centerOfPanels()? Do we need to show our calculations through coding
+		// 1: std::tuple<int, int> centerOfPanels()? Do we need to show our calculations through coding
 		// 2: Calculate the centers of each panel on paper then set them as constants [Easier]
+
+		starBurstTest(std::get<0>(panelOne),std::get<1>(panelOne), ONE);
+		starBurstTest(std::get<0>(panelOne), std::get<1>(panelTwo), TWO);
+		starBurstTest(std::get<0>(panelOne), std::get<1>(panelThree), THREE);
+		starBurstTest(std::get<0>(panelOne), std::get<1>(panelFour), FOUR);
 		break;
 	
 	case 2:
-		// TODO: Implement the "parallelogram" test
+		parallelogramTest(ONE);
+		parallelogramTest(TWO);
+		parallelogramTest(THREE);
+		parallelogramTest(FOUR);
 		break;
 	
 	case 3:
-		// TODO: Implement the "random" test
+		randomTest(ONE);
+		randomTest(TWO);
+		randomTest(THREE);
+		randomTest(FOUR);
 		break;
 
 	case 4:
-		// TODO: Implement filled polygons
+		filledPolygonsTest(ONE);
+		filledPolygonsTest(TWO);
+		filledPolygonsTest(THREE);
+		filledPolygonsTest(FOUR);
 		break;
 		
 	case 5:
-		// TODO: Implement altered version of filled polygons
+		alteredFilledPolygonsTest(ONE);
+		alteredFilledPolygonsTest(TWO);
+		alteredFilledPolygonsTest(THREE);
+		alteredFilledPolygonsTest(FOUR);
 		break;
 
 	case 6:
