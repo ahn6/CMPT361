@@ -2,6 +2,8 @@
 #include <cmath>
 #include "client.h"
 
+# define M_PI           3.14159265358979323846  /* pi */
+
 Client::Client(Drawable *drawable)
 {
     this->drawable = drawable;
@@ -12,7 +14,6 @@ void Client::nextPage() {
 	static int pageNumber = 0;
 	pageNumber++;
     std::cout << "PageNumber " << pageNumber << std::endl;
-
 	// TODO [COMPLETE]: We must create 5 pages that consist of 4 panels each
 	// Each Panel must be 300x300 pixels with 50 pixel gaps.
 	// Use black & white background
@@ -65,6 +66,7 @@ void Client::nextPage() {
         drawable->updateScreen();
     }
 	panelTests(pageNumber); // Test the specific functionality of each panel on the specific page;
+	drawable->updateScreen();
 }
 
 void Client::draw_rect(int x1, int y1, int x2, int y2, unsigned int color) {
@@ -82,34 +84,37 @@ void Client::draw_rect(int x1, int y1, int x2, int y2, unsigned int color) {
 //============================================================
 // This will calculate the centre of a specific panel
 // Returns the centre of the panel (x,y)
-std::tuple<int, int> Client::panelCentre(int x1, int y1, int x2, int y2) {
-	const int xDifference = std::abs(x2 - x1);
-	const int yDifference = std::abs(y2 - y1);
-
+std::tuple<int, int> Client::calculate_PanelCentre(int x1, int y1, int x2, int y2) {
+	const int xDifference = std::abs(x2 + x1);
+	const int yDifference = std::abs(y2 + y1);
 	return std::make_tuple((xDifference / 2), (yDifference / 2));
 }
 
 //============================================================
-// How does DDA work?
-// 1) Plots initial points
-// 2) (x, round(y)) = ROUND(y)
-
 void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color) {
 
 	//TODO: Implement
 	const int dx = x2 - x1;
 	const int dy = y2 - y1;
+	float increment = 0;
+
+	if (std::abs(dx) >= std::abs(dy))
+	{
+		increment = std::abs(dx);
+	}
+	else
+	{
+		increment = std::abs(dy);
+	}
+
+	float m = dx / increment;
 	float y = y1;
 
-	// This is only for slope less than one. (Does this mean in octant I?)
-	float Yincrement = std::abs(dy) / std::abs(dx);
 	for (int x = x1; x < x2; x++)
 	{
 		drawable->setPixel(x, std::round(y), 0xffffffff);
-		y = y + Yincrement;
+		y = y + m;
 	}
-	
-	// What happens if slope is greater than one.
 }
 
 //============================================================
@@ -143,6 +148,28 @@ void Client::antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int
 //============================================================
 void Client::starBurstTest(int centreX, int centreY, Panel whichPanel) {
 	// TODO: Implement "starburst" test
+	// TODO: Figure out how far out the lines of the starburst should go
+	// Start at centre
+	//
+	// Create 90 lines that are equally spaced in angle around the centre
+	// i.e: 0 degress, 4 degrees, 8 degrees etc.
+
+	float length = 0;
+	float heigth = 0;
+
+	switch (whichPanel) {
+
+	case (ONE):
+		for (int i = 1; i < 90; i++)
+		{
+			length = 125 * cos(4 * i * M_PI / 180);
+			heigth = 125 * sin(4 * i * M_PI / 180);
+
+			length = centreX + length;
+			heigth = centreY + heigth;
+			lineDrawer_DDA(centreX, centreY, std::round(length), std::round(heigth), ONE);
+		}
+	}
 }
 
 //============================================================
@@ -173,10 +200,10 @@ void Client::panelTests(const int pageNumber) {
 	// PanelTwo: (400,50) & (700,350)
 	// PanelThree: (50, 400) & (350,700)
 	// PanelFour: (400,400) & (700,700)
-	const std::tuple<int, int> panelOne = panelCentre(50, 50, 350, 350);
-	const std::tuple<int, int> panelTwo = panelCentre(400, 50, 750, 350);
-	const std::tuple<int, int> panelThree = panelCentre(50, 400, 350, 700);
-	const std::tuple<int, int> panelFour = panelCentre(400, 400, 700, 700);
+	const std::tuple<int, int> panelOne = calculate_PanelCentre(50, 50, 350, 350);
+	const std::tuple<int, int> panelTwo = calculate_PanelCentre(400, 50, 750, 350);
+	const std::tuple<int, int> panelThree = calculate_PanelCentre(50, 400, 350, 700);
+	const std::tuple<int, int> panelFour = calculate_PanelCentre(400, 400, 700, 700);
 
 	switch (pageNumber) {
 		

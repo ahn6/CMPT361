@@ -18,7 +18,7 @@ public:
 	//
 	// Returns (x,y) as the centre of the pixel
 	//============================================================
-	std::tuple<int, int> panelCentre(int x1, int y1, int x2, int y2);
+	std::tuple<int, int> calculate_PanelCentre(int x1, int y1, int x2, int y2);
 
 private:
     Drawable *drawable;
