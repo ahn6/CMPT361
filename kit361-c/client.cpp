@@ -78,7 +78,7 @@ void Client::draw_rect(int x1, int y1, int x2, int y2, unsigned int color) {
 }
 
 //============================================================
-// Helper Functions
+// Class Helper Functions
 //============================================================
 
 //============================================================
@@ -91,29 +91,84 @@ std::tuple<int, int> Client::calculate_PanelCentre(int x1, int y1, int x2, int y
 }
 
 //============================================================
+// This will calculate the line endpoints for the starburst test
+// Returns the endpoints of the specific angle (round(x),round(y))
+std::tuple<float, float> Client::calculate_starBurstAngles(int centreX, int centreY, int count)
+{
+
+	float length = 0;
+	float height = 0;
+	length = 125 * cos(4 * count * M_PI / 180);
+	height = 125 * sin(4 * count * M_PI / 180);
+
+	length = centreX + length;
+	height = centreY + height;
+	return std::make_tuple(length, height);
+}
+
+//============================================================
 void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color) {
 
-	//TODO: Implement
-	const int dx = x2 - x1;
-	const int dy = y2 - y1;
-	float increment = 0;
+	// We want to find our y = mx + b components
+	const float dx = x2 - x1;
+	const float dy = y2 - y1;
+	float m = dy / dx;
+	float b = y1 - m*x1;
 
-	if (std::abs(dx) >= std::abs(dy))
+	// This will determine what case we are in
+	bool slopeLessThanOne = true;
+
+	if (std::abs(m) >= 1)
 	{
-		increment = std::abs(dx);
+		slopeLessThanOne = false;
 	}
-	else
+
+	// CASE 1
+	if (slopeLessThanOne)
 	{
-		increment = std::abs(dy);
+		float calculatedY = 0;
+		// CASE 1a
+		if (dx > 0)
+		{
+			for (int x = x1; x < x2; x++)
+			{
+				calculatedY = m*x + b;
+				drawable->setPixel(x, std::round(calculatedY), color);
+			}
+		}
+		// CASE 1b
+		else
+		{
+			for (int x = x1; x > x2; x--)
+			{
+				calculatedY = m*x + b;
+				drawable->setPixel(x, std::round(calculatedY), color);
+			}
+		}
 	}
 
-	float m = dx / increment;
-	float y = y1;
-
-	for (int x = x1; x < x2; x++)
+	// CASE 2
+	if (!slopeLessThanOne)
 	{
-		drawable->setPixel(x, std::round(y), 0xffffffff);
-		y = y + m;
+		float calculatedX = 0;
+		// CASE 2a
+		if (dy > 0)
+		{
+			for (int y = y1; y < y2; y++)
+			{
+				calculatedX = (y - b) / m;
+				drawable->setPixel(std::round(calculatedX), y, color);
+			}
+		}
+		// CASE 2b
+		else
+		{
+			for (int y = y1; y > y2; y--)
+			{
+				calculatedX = (y - b) / m;
+				drawable->setPixel(std::round(calculatedX), y, color);
+			}
+		}
 	}
 }
 
@@ -153,21 +208,17 @@ void Client::starBurstTest(int centreX, int centreY, Panel whichPanel) {
 	//
 	// Create 90 lines that are equally spaced in angle around the centre
 	// i.e: 0 degress, 4 degrees, 8 degrees etc.
+	for (int i = 0; i < 90; i++)
+	{
+		std::tuple<float, float> linesToCreate = calculate_starBurstAngles(centreX, centreY, i);
+		switch (whichPanel) {
 
-	float length = 0;
-	float heigth = 0;
+		case (ONE):
+			lineDrawer_DDA(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffccccff);
+			break;
 
-	switch (whichPanel) {
-
-	case (ONE):
-		for (int i = 1; i < 90; i++)
-		{
-			length = 125 * cos(4 * i * M_PI / 180);
-			heigth = 125 * sin(4 * i * M_PI / 180);
-
-			length = centreX + length;
-			heigth = centreY + heigth;
-			lineDrawer_DDA(centreX, centreY, std::round(length), std::round(heigth), ONE);
+		case (TWO):
+			lineDrawer_Bresenham(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffccccff);
 		}
 	}
 }
