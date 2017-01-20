@@ -107,6 +107,137 @@ std::tuple<float, float> Client::calculate_starBurstAngles(int centreX, int cent
 }
 
 //============================================================
+// This will determine the specific octant we are currently in
+// based on the coordinates given
+//Returns the specific Octant
+//============================================================
+Octant Client::calculate_Octant(int dx, int dy)
+{
+	if ((std::abs(dy) / std::abs(dx)) > 1)
+	{
+		if (dx > 0)
+		{
+			if (dy > 0)
+			{
+				return OctTwo;
+			}
+			else
+			{
+				return OctSeven;
+			}
+		}
+		else
+		{
+			if (dy > 0)
+			{
+				return OctThree;
+			}
+			else
+			{
+				return OctSix;
+			}
+		}
+	}
+	else
+	{
+		if (dx > 0)
+		{
+			if (dy > 0)
+			{
+				return OctOne;
+			}
+			else
+			{
+				return OctEight;
+			}
+		}
+		else
+		{
+			if (dy > 0)
+			{
+				return OctFour;
+			}
+			else
+			{
+				return OctFive;
+			}
+		}
+	}
+}
+
+// This will convert the given coordinate based on the octant
+//Returns the converted coordinates (x,y)
+std::tuple<int, int> Client::convertToOctantOne(int convertedX, int convertedY, Octant whichOctant) {
+	switch (whichOctant) {
+	case (OctOne):
+		std::make_tuple(convertedX, convertedY);
+		break;
+	case(OctTwo):
+		return std::make_tuple(convertedY, convertedX);
+		break;
+	case(OctThree):
+		return std::make_tuple(convertedY, convertedX*(-1));
+		break;
+	case(OctFour):
+		std::make_tuple(convertedX*(-1), convertedY);
+		break;
+	case(OctFive):
+		return std::make_tuple(convertedX*(-1), convertedY*(-1));
+		break;
+	case(OctSix):
+		return std::make_tuple(convertedY*(-1), convertedX*(-1));
+		break;
+	case(OctSeven):
+		return std::make_tuple(convertedY*(-1), convertedX);
+		break;
+	case(OctEight):
+		return std::make_tuple(convertedX, convertedY*(-1));
+		break;
+	default:
+		break;
+	}
+	// Should not reach here
+	return std::make_tuple(convertedX, convertedY);
+}
+
+//============================================================
+// This will convert the given coordinate from Octant One to its respected octant
+//
+//Returns the converted coordinates (x,y)
+std::tuple<int, int> Client::convertFromOctantOne(int convertedX, int convertedY, Octant whichOctant) {
+	
+	switch (whichOctant) {
+	case (OctOne):
+		std::make_tuple(convertedX, convertedY);
+		break;
+	case(OctTwo):
+		return std::make_tuple(convertedY, convertedX);
+		break;
+	case(OctThree):
+		return std::make_tuple(convertedY*(-1), convertedX);
+		break;
+	case(OctFour):
+		std::make_tuple(convertedX*(-1), convertedY);
+		break;
+	case(OctFive):
+		return std::make_tuple(convertedX*(-1), convertedY*(-1));
+		break;
+	case(OctSix):
+		return std::make_tuple(convertedY*(-1), convertedX*(-1));
+		break;
+	case(OctSeven):
+		return std::make_tuple(convertedY, convertedX*(-1));
+		break;
+	case(OctEight):
+		return std::make_tuple(convertedX, convertedY*(-1));
+		break;
+	default:
+		break;
+	}
+	// Should not reach here
+	return std::make_tuple(convertedX, convertedY);
+}
+//============================================================
 void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color) {
 
 	// We want to find our y = mx + b components
@@ -175,7 +306,47 @@ void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color) 
 //============================================================
 void Client::lineDrawer_Bresenham(int x1, int y1, int x2, int y2, unsigned int color) {
 
+	// We will determine the coordinates octant before we do anything
+	// Our algorithm will deal with the coordinates only on Octant I
+	//
+	// To determine the octants, there should be 11 per octant + 2 edage cases
+	// 11 * 8 + 2 = 90 lines
 	//TODO: Implement
+	int dx = x2 - x1; 
+	int dy = y2 - y1;
+	Octant whichOctant = calculate_Octant(dx, dy);
+	// Characteristics of Octant I
+	// 1) Will always have a slope less  than 1
+	// 2) Beginning point x < Endpoint x
+	// 3) Beginning point y > Endpoint y
+	std::tuple <int, int> convertedCoordinates = convertToOctantOne(x2, y2, whichOctant);
+
+	int tempDx = std::get<0>(convertedCoordinates) - x1;
+	int tempDy = std::get<1>(convertedCoordinates) - y1;
+
+	const int twoDx = 2 * tempDx;
+	const int twoDy = 2 * tempDy;
+
+	const int t2 = twoDy - twoDx;
+	int error = twoDy - dx;
+
+	int y = y1;
+	drawable->setPixel(x1, y, color);
+	for (int x = x1 + 1; x < x2; x++)
+	{
+		if (error >= 0)
+		{
+			error = error + t2;
+			y = y + 1; // increase y by 1
+		}
+		else
+		{
+			error = error + twoDy;
+		}
+		std::tuple <int, int> revertedCoordinates = convertToOctantOne(x, y, whichOctant);
+		drawable->setPixel(std::get<0>(revertedCoordinates), std::get<1>(revertedCoordinates), color);
+	}
+
 }
 
 //============================================================
@@ -208,7 +379,7 @@ void Client::starBurstTest(int centreX, int centreY, Panel whichPanel) {
 	//
 	// Create 90 lines that are equally spaced in angle around the centre
 	// i.e: 0 degress, 4 degrees, 8 degrees etc.
-	for (int i = 0; i < 90; i++)
+	for (int i = 0; i <= 90; i++)
 	{
 		std::tuple<float, float> linesToCreate = calculate_starBurstAngles(centreX, centreY, i);
 		switch (whichPanel) {
@@ -219,6 +390,7 @@ void Client::starBurstTest(int centreX, int centreY, Panel whichPanel) {
 
 		case (TWO):
 			lineDrawer_Bresenham(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffccccff);
+			break;
 		}
 	}
 }
@@ -252,7 +424,7 @@ void Client::panelTests(const int pageNumber) {
 	// PanelThree: (50, 400) & (350,700)
 	// PanelFour: (400,400) & (700,700)
 	const std::tuple<int, int> panelOne = calculate_PanelCentre(50, 50, 350, 350);
-	const std::tuple<int, int> panelTwo = calculate_PanelCentre(400, 50, 750, 350);
+	const std::tuple<int, int> panelTwo = calculate_PanelCentre(400, 50, 700, 350);
 	const std::tuple<int, int> panelThree = calculate_PanelCentre(50, 400, 350, 700);
 	const std::tuple<int, int> panelFour = calculate_PanelCentre(400, 400, 700, 700);
 
@@ -264,9 +436,9 @@ void Client::panelTests(const int pageNumber) {
 		// 2: Calculate the centers of each panel on paper then set them as constants [Easier]
 
 		starBurstTest(std::get<0>(panelOne),std::get<1>(panelOne), ONE);
-		starBurstTest(std::get<0>(panelOne), std::get<1>(panelTwo), TWO);
-		starBurstTest(std::get<0>(panelOne), std::get<1>(panelThree), THREE);
-		starBurstTest(std::get<0>(panelOne), std::get<1>(panelFour), FOUR);
+		starBurstTest(std::get<0>(panelTwo), std::get<1>(panelTwo), TWO);
+		starBurstTest(std::get<0>(panelThree), std::get<1>(panelThree), THREE);
+		starBurstTest(std::get<0>(panelFour), std::get<1>(panelFour), FOUR);
 		break;
 	
 	case 2:
