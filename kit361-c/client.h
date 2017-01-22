@@ -28,35 +28,9 @@ public:
 	//============================================================
 	std::tuple<float, float> Client::calculate_starBurstAngles(int centreX, int centreY, int count);
 
-
-	//============================================================
-	// This will determine the specific octant we are currently in
-	// based on the coordinates given
-	//
-	//Returns the specific Octant
-	Octant Client::calculate_Octant(int dx, int dy);
-
-	//============================================================
-	// This will convert the given coordinate into octant One based on the octant
-	//
-	//Returns the converted coordinates (x,y)
-	std::tuple<int, int> Client::convertToOctantOne(int convertedX, int convertedY, Octant whichOctant);
-
-	//============================================================
-	// This will convert the given coordinate from Octant One to its respected octant
-	//
-	//Returns the converted coordinates (x,y)
-	std::tuple<int, int> Client::convertFromOctantOne(int convertedX, int convertedY, Octant whichOctant);
-
 private:
     Drawable *drawable;
     void draw_rect(int x1, int y1, int x2, int y2, unsigned int color);
-
-	// TODO [COMPLETE]: Add stubs for each panel
-	// DDA
-	// Bresenham's
-	// Alternating line drawers between DDA, Bresham's
-	// Antialias Line Renderer
 
 	//============================================================
 	// Digital Differential Analyzer
@@ -93,7 +67,7 @@ private:
 	//============================================================
 	// Digital Differential Analyzer / Bresenham's Algorithm Alternating
 	//============================================================
-	void lineDrawer_Alternate(int x1, int y1, int x2, int y2, unsigned int color);
+	void lineDrawer_Alternate(int x1, int y1, int x2, int y2, int count, unsigned int color);
 
 	//============================================================
 	// Antialias Line Renderer

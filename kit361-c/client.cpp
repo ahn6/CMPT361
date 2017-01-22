@@ -107,137 +107,6 @@ std::tuple<float, float> Client::calculate_starBurstAngles(int centreX, int cent
 }
 
 //============================================================
-// This will determine the specific octant we are currently in
-// based on the coordinates given
-//Returns the specific Octant
-//============================================================
-Octant Client::calculate_Octant(int dx, int dy)
-{
-	if ((std::abs(dy) / std::abs(dx)) > 1)
-	{
-		if (dx > 0)
-		{
-			if (dy > 0)
-			{
-				return OctTwo;
-			}
-			else
-			{
-				return OctSeven;
-			}
-		}
-		else
-		{
-			if (dy > 0)
-			{
-				return OctThree;
-			}
-			else
-			{
-				return OctSix;
-			}
-		}
-	}
-	else
-	{
-		if (dx > 0)
-		{
-			if (dy > 0)
-			{
-				return OctOne;
-			}
-			else
-			{
-				return OctEight;
-			}
-		}
-		else
-		{
-			if (dy > 0)
-			{
-				return OctFour;
-			}
-			else
-			{
-				return OctFive;
-			}
-		}
-	}
-}
-
-// This will convert the given coordinate based on the octant
-//Returns the converted coordinates (x,y)
-std::tuple<int, int> Client::convertToOctantOne(int convertedX, int convertedY, Octant whichOctant) {
-	switch (whichOctant) {
-	case (OctOne):
-		std::make_tuple(convertedX, convertedY);
-		break;
-	case(OctTwo):
-		return std::make_tuple(convertedY, convertedX);
-		break;
-	case(OctThree):
-		return std::make_tuple(convertedY, convertedX*(-1));
-		break;
-	case(OctFour):
-		std::make_tuple(convertedX*(-1), convertedY);
-		break;
-	case(OctFive):
-		return std::make_tuple(convertedX*(-1), convertedY*(-1));
-		break;
-	case(OctSix):
-		return std::make_tuple(convertedY*(-1), convertedX*(-1));
-		break;
-	case(OctSeven):
-		return std::make_tuple(convertedY*(-1), convertedX);
-		break;
-	case(OctEight):
-		return std::make_tuple(convertedX, convertedY*(-1));
-		break;
-	default:
-		break;
-	}
-	// Should not reach here
-	return std::make_tuple(convertedX, convertedY);
-}
-
-//============================================================
-// This will convert the given coordinate from Octant One to its respected octant
-//
-//Returns the converted coordinates (x,y)
-std::tuple<int, int> Client::convertFromOctantOne(int convertedX, int convertedY, Octant whichOctant) {
-	
-	switch (whichOctant) {
-	case (OctOne):
-		std::make_tuple(convertedX, convertedY);
-		break;
-	case(OctTwo):
-		return std::make_tuple(convertedY, convertedX);
-		break;
-	case(OctThree):
-		return std::make_tuple(convertedY*(-1), convertedX);
-		break;
-	case(OctFour):
-		std::make_tuple(convertedX*(-1), convertedY);
-		break;
-	case(OctFive):
-		return std::make_tuple(convertedX*(-1), convertedY*(-1));
-		break;
-	case(OctSix):
-		return std::make_tuple(convertedY*(-1), convertedX*(-1));
-		break;
-	case(OctSeven):
-		return std::make_tuple(convertedY, convertedX*(-1));
-		break;
-	case(OctEight):
-		return std::make_tuple(convertedX, convertedY*(-1));
-		break;
-	default:
-		break;
-	}
-	// Should not reach here
-	return std::make_tuple(convertedX, convertedY);
-}
-//============================================================
 void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color) {
 
 	// We want to find our y = mx + b components
@@ -309,50 +178,220 @@ void Client::lineDrawer_Bresenham(int x1, int y1, int x2, int y2, unsigned int c
 	// We will determine the coordinates octant before we do anything
 	// Our algorithm will deal with the coordinates only on Octant I
 	//
-	// To determine the octants, there should be 11 per octant + 2 edage cases
-	// 11 * 8 + 2 = 90 lines
-	//TODO: Implement
-	int dx = x2 - x1; 
+	int dx = x2 - x1;
 	int dy = y2 - y1;
-	Octant whichOctant = calculate_Octant(dx, dy);
-	// Characteristics of Octant I
-	// 1) Will always have a slope less  than 1
-	// 2) Beginning point x < Endpoint x
-	// 3) Beginning point y > Endpoint y
-	std::tuple <int, int> convertedCoordinates = convertToOctantOne(x2, y2, whichOctant);
 
-	int tempDx = std::get<0>(convertedCoordinates) - x1;
-	int tempDy = std::get<1>(convertedCoordinates) - y1;
-
-	const int twoDx = 2 * tempDx;
-	const int twoDy = 2 * tempDy;
-
-	const int t2 = twoDy - twoDx;
-	int error = twoDy - dx;
-
-	int y = y1;
-	drawable->setPixel(x1, y, color);
-	for (int x = x1 + 1; x < x2; x++)
+	if (dx < 0)
 	{
-		if (error >= 0)
-		{
-			error = error + t2;
-			y = y + 1; // increase y by 1
-		}
-		else
-		{
-			error = error + twoDy;
-		}
-		std::tuple <int, int> revertedCoordinates = convertToOctantOne(x, y, whichOctant);
-		drawable->setPixel(std::get<0>(revertedCoordinates), std::get<1>(revertedCoordinates), color);
+		dx = dx * (-1);
 	}
 
+	if (dy < 0)
+	{
+		dy = dy * (-1);
+	}
+
+	int twoDx = 0;
+	int twoDy = 0;
+	int t2 = 0;
+	int err = 0;
+	int y = y1;
+	int x = x1;
+
+	drawable->setPixel(x1, y, color);
+
+	// This is considering that the lines are in the upper octants
+	if (y2 - y1 >= 0)
+	{
+		twoDx = 2 * dx;
+		twoDy = 2 * dy;
+
+		// If twoDy is less than twoDx
+		// Then we traverse on x to get the most pixels
+		if (twoDy < twoDx)
+		{
+			t2 = twoDy - twoDx;
+			err = twoDy - dx;
+
+			// Octant: 1
+			if (x2 - x1 >= 0)
+			{
+				for (int x = x1 + 1; x <= x2; x++)
+				{
+					if (err >= 0)
+					{
+						err = err + t2;
+						y = y + 1;
+					}
+					else
+					{
+						err = err + twoDy;
+					}
+					drawable->setPixel(x, y, color);
+				}
+			}
+			// Octant: 4
+			else
+			{
+				for (int x = x1 - 1; x >= x2; x--)
+				{
+					if (err >= 0)
+					{
+						err = err + t2;
+						y = y + 1;
+					}
+					else
+					{
+						err = err + twoDy;
+					}
+					drawable->setPixel(x, y, color);
+				}
+			}
+		}
+
+		// If twoDy is greater than twoDx
+		// Then we traverse on y to get the most pixels
+		else
+		{
+			t2 = twoDx - twoDy;
+			err = twoDx - dy;
+
+			// Octant 2;
+			if (x2 - x1 >= 0)
+			{
+				for (int y = y1 + 1; y < y2; y++)
+				{
+					if (err >= 0)
+					{
+						err = err + t2;
+						x = x + 1;
+					}
+					else
+					{
+						err = err + twoDx;
+					}
+					drawable->setPixel(x, y, color);
+				}
+			}
+			// Octant 3
+			else
+			{
+				for (int y = y1 + 1; y < y2; y++)
+				{
+					if (err >= 0)
+					{
+						err = err + t2;
+						x = x - 1; // increase y by 1
+					}
+					else
+					{
+						err = err + twoDx;
+					}
+					drawable->setPixel(x, y, color);
+				}
+			}
+		}
+	} // End of y2 - y1
+	
+	// Now we consider the lower octants
+	// Pretty much the same as above but instead of incrementing 
+	// after err >= 0, we will decrement for all cases
+	else
+	{
+		twoDx = 2 * dx;
+		twoDy = 2 * dy;
+
+		// If twoDy is less than twoDx
+		// Then we traverse on x to get the most pixels
+		if (twoDy < twoDx)
+		{
+			t2 = twoDy - twoDx;
+			err = twoDy - dx;
+
+			// Octant: 8
+			if (x2 - x1 >= 0)
+			{
+				for (int x = x1 + 1; x <= x2; x++)
+				{
+					if (err >= 0)
+					{
+						err = err + t2;
+						y = y - 1;
+					}
+					else
+					{
+						err = err + twoDy;
+					}
+					drawable->setPixel(x, y, color);
+				}
+			}
+			// Octant: 5
+			else
+			{
+				for (int x = x1 - 1; x >= x2; x--)
+				{
+					if (err >= 0)
+					{
+						err = err + t2;
+						y = y - 1;
+					}
+					else
+					{
+						err = err + twoDy;
+					}
+					drawable->setPixel(x, y, color);
+				}
+			}
+		}
+
+		// If twoDy is greater than twoDx
+		// Then we traverse on y to get the most pixels
+		else
+		{
+			t2 = twoDx - twoDy;
+			err = twoDx - dy;
+
+			// Octant 7
+			if (x2 - x1 >= 0)
+			{
+				for (int y = y1 - 1; y >= y2; y--)
+				{
+					if (err >= 0)
+					{
+						err = err + t2;
+						x = x + 1;
+					}
+					else
+					{
+						err = err + twoDx;
+					}
+					drawable->setPixel(x, y, color);
+				}
+			}
+			// Octant 6
+			else
+			{
+				for (int y = y1 - 1; y >= y2; y--)
+				{
+					if (err >= 0)
+					{
+						err = err + t2;
+						x = x - 1; // increase y by 1
+					}
+					else
+					{
+						err = err + twoDx;
+					}
+					drawable->setPixel(x, y, color);
+				}
+			}
+		}
+	}
 }
 
 //============================================================
-void Client::lineDrawer_Alternate(int x1, int y1, int x2, int y2, unsigned int color) {
+void Client::lineDrawer_Alternate(int x1, int y1, int x2, int y2, int count, unsigned int color) {
 
-	//TODO: Implement
 }
 
 //============================================================
@@ -391,6 +430,8 @@ void Client::starBurstTest(int centreX, int centreY, Panel whichPanel) {
 		case (TWO):
 			lineDrawer_Bresenham(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffccccff);
 			break;
+		case (THREE):
+			lineDrawer_Alternate(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffccccff);
 		}
 	}
 }
