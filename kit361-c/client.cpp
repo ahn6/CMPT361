@@ -391,7 +391,14 @@ void Client::lineDrawer_Bresenham(int x1, int y1, int x2, int y2, unsigned int c
 
 //============================================================
 void Client::lineDrawer_Alternate(int x1, int y1, int x2, int y2, int count, unsigned int color) {
-
+	if (count % 2 == 0)
+	{
+		lineDrawer_DDA(x1, y1, x2, y2, color);
+	}
+	else
+	{
+		lineDrawer_Bresenham(x1, y1, x2, y2, color);
+	}
 }
 
 //============================================================
@@ -412,10 +419,6 @@ void Client::antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int
 
 //============================================================
 void Client::starBurstTest(int centreX, int centreY, Panel whichPanel) {
-	// TODO: Implement "starburst" test
-	// TODO: Figure out how far out the lines of the starburst should go
-	// Start at centre
-	//
 	// Create 90 lines that are equally spaced in angle around the centre
 	// i.e: 0 degress, 4 degrees, 8 degrees etc.
 	for (int i = 0; i <= 90; i++)
@@ -426,12 +429,15 @@ void Client::starBurstTest(int centreX, int centreY, Panel whichPanel) {
 		case (ONE):
 			lineDrawer_DDA(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffccccff);
 			break;
-
 		case (TWO):
 			lineDrawer_Bresenham(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffccccff);
 			break;
 		case (THREE):
-			lineDrawer_Alternate(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffccccff);
+			lineDrawer_Alternate(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), i, 0xffccccff);
+			break;
+		case (FOUR):
+			antialias_LineRenderer(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffccccff); // TODO
+			break;
 		}
 	}
 }
@@ -439,11 +445,113 @@ void Client::starBurstTest(int centreX, int centreY, Panel whichPanel) {
 //============================================================
 void Client::parallelogramTest(Panel whichPanel) {
 	// TODO: Implement the "parallelogram" test
+	const int xStart_1 = 20;
+	const int yStart_1 = 80;
+	const int xEnd_1 = 150;
+	const int yEnd_1 = 150;
+	
+	const int xStart_2 = 160;
+	const int yStart_2 = 270;
+	const int xEnd_2 = 240;
+	const int yEnd_2 = 40;
+
+	int xPanel = 0;
+	int yPanel = 0;
+
+	for (int i = 0; i <= 50; i++)
+	{
+		switch (whichPanel) {
+		case (ONE):
+			xPanel = 50;
+			yPanel = 50;
+			lineDrawer_DDA(xPanel + xStart_1, 
+						   yPanel + yStart_1 + i, 
+						   xPanel + xEnd_1, 
+						   yPanel + yEnd_1 + i, 0xffccccff);
+			lineDrawer_DDA(xPanel + xStart_2 + i,
+						   yPanel + yStart_2, 
+						   xPanel + xEnd_2 + i, 
+						   yPanel + yEnd_2, 0xffccccff);
+			break;
+		case (TWO):
+			xPanel = 400;
+			yPanel = 50;
+			lineDrawer_Bresenham(xPanel + xStart_1,
+				yPanel + yStart_1 + i,
+				xPanel + xEnd_1,
+				yPanel + yEnd_1 + i, 0xffccccff);
+			lineDrawer_Bresenham(xPanel + xStart_2 + i,
+				yPanel + yStart_2,
+				xPanel + xEnd_2 + i,
+				yPanel + yEnd_2, 0xffccccff);
+			break;
+		case(THREE):
+			xPanel = 50;
+			yPanel = 400;
+			lineDrawer_Alternate(xPanel + xStart_1,
+				yPanel + yStart_1 + i,
+				xPanel + xEnd_1,
+				yPanel + yEnd_1 + i, i, 0xffccccff);
+			lineDrawer_Alternate(xPanel + xStart_2 + i,
+				yPanel + yStart_2,
+				xPanel + xEnd_2 + i,
+				yPanel + yEnd_2, i, 0xffccccff);
+			break;
+		case(FOUR):
+			break;
+		}
+	}
+
 }
 
 //============================================================
 void Client::randomTest(Panel whichPanel) {
 	// TODO: Implement the "random" test
+	int beginRandomX = 0; //rand() % 299;
+	int beginRandomY = 0; //rand() % 299;
+	int endRandomX = 0;
+	int endRandomY = 0;
+
+	int xPanel = 0;
+	int yPanel = 0;
+
+	for (int i = 0; i <= 30; i++)
+	{
+		beginRandomX = rand() % 299;
+		beginRandomY = rand() % 299;
+		endRandomX = rand() % 299;
+		endRandomY = rand() % 299;
+
+		switch (whichPanel) {
+
+		case (ONE):
+			xPanel = 50;
+			yPanel = 50;
+			lineDrawer_DDA(xPanel + beginRandomX, 
+						   yPanel + endRandomX, 
+						   xPanel + endRandomX, 
+						   xPanel + endRandomY, 0xffccccff);
+			break;
+		case (TWO):
+			xPanel = 400;
+			yPanel = 50;
+			lineDrawer_Bresenham(xPanel + beginRandomX, 
+								 yPanel + endRandomX, 
+								 xPanel + endRandomX, 
+								 xPanel + endRandomY, 0xffccccff);
+			break;
+		case (THREE):
+			xPanel = 50;
+			yPanel = 400;
+			lineDrawer_Alternate(xPanel + beginRandomX,
+								 yPanel + endRandomX,
+								 xPanel + endRandomX,
+								 xPanel + endRandomY, i, 0xffccccff);
+			break;
+		}
+	}
+
+
 }
 
 //============================================================

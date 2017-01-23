@@ -61,11 +61,28 @@ private:
 
 	//============================================================
 	// Bresenham's Algorithm
+	//
+	// Bresenham algorithm is simply taking decision parameters (t2, err)
+	// and deciding whether to increment x alone or y & x
+	// In simple terms, if the err which is calculated by 2*dy - dx
+	// 1) err < 0 then err = err + 2*dy (Only increment x)
+	// 2) err > 0 then err = err + t2 (x and y increment)
+	// 
+	// The method that is implemented considers all octants
+	// which is split into 2 major parts
+	// 1) If (y2 - y1 > 0) --> Octants: 1 2 3 4
+	// 2) if (y2 - y1 < 0) --> Octants: 5 6 7 8
+	// Lines in each octant are then calculated and drawned based on 
+	// the incremental steps (dx or dy) and where the end points and 
+	// start points lie in the the panel/
 	//============================================================
 	void lineDrawer_Bresenham(int x1, int y1, int x2, int y2, unsigned int color);
 
 	//============================================================
 	// Digital Differential Analyzer / Bresenham's Algorithm Alternating
+	//
+	// Just a combination of both DDA and Bresenham's algorithm
+	// 
 	//============================================================
 	void lineDrawer_Alternate(int x1, int y1, int x2, int y2, int count, unsigned int color);
 
