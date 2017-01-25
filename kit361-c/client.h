@@ -3,6 +3,9 @@
 #include "drawable.h"
 #include "pageturner.h"
 #include <tuple>
+#include <iostream>
+#include <cmath>
+#include <ctime>
 
 typedef enum {ONE, TWO, THREE, FOUR} Panel;
 typedef enum {OctOne, OctTwo, OctThree, OctFour, OctFive, OctSix, OctSeven, OctEight} Octant;
@@ -26,7 +29,13 @@ public:
 	//
 	// Returns the endpoints of the specific angle (round(x),round(y))
 	//============================================================
-	std::tuple<float, float> Client::calculate_starBurstAngles(int centreX, int centreY, int count);
+	std::tuple<float, float> calculate_StarBurstAngles(int centreX, int centreY, int count);
+
+	//============================================================
+	// Calcuate the color values for the lines
+	//
+	//============================================================
+	int calculate_LineColor();
 
 private:
     Drawable *drawable;
@@ -82,7 +91,9 @@ private:
 	// Digital Differential Analyzer / Bresenham's Algorithm Alternating
 	//
 	// Just a combination of both DDA and Bresenham's algorithm
-	// 
+	// First line will always be DDA then Bresenham
+	// This is determined by caching the number of lines being drawn
+	// count % 2
 	//============================================================
 	void lineDrawer_Alternate(int x1, int y1, int x2, int y2, int count, unsigned int color);
 
@@ -106,7 +117,7 @@ private:
 	void parallelogramTest(Panel whichPanel);
 
 	//============================================================
-	void randomTest(Panel whichPanel);
+	void randomTest(int x0, int y0, int x1, int y1, int count);
 
 	//============================================================
 	void filledPolygonsTest(Panel whichPanel);

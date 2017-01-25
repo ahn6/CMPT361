@@ -1,5 +1,3 @@
-#include <iostream>
-#include <cmath>
 #include "client.h"
 
 # define M_PI           3.14159265358979323846  /* pi */
@@ -93,7 +91,7 @@ std::tuple<int, int> Client::calculate_PanelCentre(int x1, int y1, int x2, int y
 //============================================================
 // This will calculate the line endpoints for the starburst test
 // Returns the endpoints of the specific angle (round(x),round(y))
-std::tuple<float, float> Client::calculate_starBurstAngles(int centreX, int centreY, int count)
+std::tuple<float, float> Client::calculate_StarBurstAngles(int centreX, int centreY, int count)
 {
 
 	float length = 0;
@@ -104,6 +102,17 @@ std::tuple<float, float> Client::calculate_starBurstAngles(int centreX, int cent
 	length = centreX + length;
 	height = centreY + height;
 	return std::make_tuple(length, height);
+}
+
+//============================================================
+// This will calculate what random colour to draw for the lines.
+int Client::calculate_LineColor()
+{
+	int r = rand() % 255;
+	int g = rand() % 255;
+	int b = rand() % 255;
+	int color = (0xff << 24) + ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
+	return color;
 }
 
 //============================================================
@@ -407,6 +416,7 @@ void Client::antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int
 	//TODO: Implement
 }
 
+
 //============================================================
 // All possible tests that is required by the assignment
 // Currently placed here.. because it outputs something
@@ -421,22 +431,24 @@ void Client::antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int
 void Client::starBurstTest(int centreX, int centreY, Panel whichPanel) {
 	// Create 90 lines that are equally spaced in angle around the centre
 	// i.e: 0 degress, 4 degrees, 8 degrees etc.
+
 	for (int i = 0; i <= 90; i++)
 	{
-		std::tuple<float, float> linesToCreate = calculate_starBurstAngles(centreX, centreY, i);
+		int color = calculate_LineColor();
+		std::tuple<float, float> linesToCreate = calculate_StarBurstAngles(centreX, centreY, i);
 		switch (whichPanel) {
 
 		case (ONE):
-			lineDrawer_DDA(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffccccff);
+			lineDrawer_DDA(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), color);
 			break;
 		case (TWO):
-			lineDrawer_Bresenham(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffccccff);
+			lineDrawer_Bresenham(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), color);
 			break;
 		case (THREE):
-			lineDrawer_Alternate(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), i, 0xffccccff);
+			lineDrawer_Alternate(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), i, color);
 			break;
 		case (FOUR):
-			antialias_LineRenderer(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffccccff); // TODO
+			antialias_LineRenderer(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), color); // TODO
 			break;
 		}
 	}
@@ -460,6 +472,7 @@ void Client::parallelogramTest(Panel whichPanel) {
 
 	for (int i = 0; i <= 50; i++)
 	{
+		int color = calculate_LineColor();
 		switch (whichPanel) {
 		case (ONE):
 			xPanel = 50;
@@ -467,11 +480,11 @@ void Client::parallelogramTest(Panel whichPanel) {
 			lineDrawer_DDA(xPanel + xStart_1, 
 						   yPanel + yStart_1 + i, 
 						   xPanel + xEnd_1, 
-						   yPanel + yEnd_1 + i, 0xffccccff);
+						   yPanel + yEnd_1 + i, color);
 			lineDrawer_DDA(xPanel + xStart_2 + i,
 						   yPanel + yStart_2, 
 						   xPanel + xEnd_2 + i, 
-						   yPanel + yEnd_2, 0xffccccff);
+						   yPanel + yEnd_2, color);
 			break;
 		case (TWO):
 			xPanel = 400;
@@ -479,11 +492,11 @@ void Client::parallelogramTest(Panel whichPanel) {
 			lineDrawer_Bresenham(xPanel + xStart_1,
 				yPanel + yStart_1 + i,
 				xPanel + xEnd_1,
-				yPanel + yEnd_1 + i, 0xffccccff);
+				yPanel + yEnd_1 + i, color);
 			lineDrawer_Bresenham(xPanel + xStart_2 + i,
 				yPanel + yStart_2,
 				xPanel + xEnd_2 + i,
-				yPanel + yEnd_2, 0xffccccff);
+				yPanel + yEnd_2, color);
 			break;
 		case(THREE):
 			xPanel = 50;
@@ -491,13 +504,23 @@ void Client::parallelogramTest(Panel whichPanel) {
 			lineDrawer_Alternate(xPanel + xStart_1,
 				yPanel + yStart_1 + i,
 				xPanel + xEnd_1,
-				yPanel + yEnd_1 + i, i, 0xffccccff);
+				yPanel + yEnd_1 + i, i, color);
 			lineDrawer_Alternate(xPanel + xStart_2 + i,
 				yPanel + yStart_2,
 				xPanel + xEnd_2 + i,
-				yPanel + yEnd_2, i, 0xffccccff);
+				yPanel + yEnd_2, i, color);
 			break;
 		case(FOUR):
+			xPanel = 400;
+			yPanel = 400;
+			antialias_LineRenderer(xPanel + xStart_1,
+								   yPanel + yStart_1 + i,
+								   xPanel + xEnd_1,
+								   yPanel + yEnd_1 + i, color);
+			antialias_LineRenderer(xPanel + xStart_2 + i,
+								   yPanel + yStart_2,
+								   xPanel + xEnd_2 + i,
+								   yPanel + yEnd_2, color);
 			break;
 		}
 	}
@@ -505,53 +528,43 @@ void Client::parallelogramTest(Panel whichPanel) {
 }
 
 //============================================================
-void Client::randomTest(Panel whichPanel) {
-	// TODO: Implement the "random" test
-	int beginRandomX = 0; //rand() % 299;
-	int beginRandomY = 0; //rand() % 299;
-	int endRandomX = 0;
-	int endRandomY = 0;
+void Client::randomTest(int x0, int y0, int x1, int y1, int count) {
 
+	int color = calculate_LineColor();
 	int xPanel = 0;
 	int yPanel = 0;
 
-	for (int i = 0; i <= 30; i++)
-	{
-		beginRandomX = rand() % 299;
-		beginRandomY = rand() % 299;
-		endRandomX = rand() % 299;
-		endRandomY = rand() % 299;
+	// First Panel
+	xPanel = 50;
+	yPanel = 50;
+	lineDrawer_DDA(xPanel + x0, 
+				   yPanel + y0, 
+				   xPanel + x1, 
+				   xPanel + y1, color);
+	
+	// Second Panel
+	xPanel = 400;
+	yPanel = 50;
+	lineDrawer_Bresenham(xPanel + x0, 
+					     yPanel + y0,
+						 xPanel + x1, 
+						 yPanel + y1, color);
 
-		switch (whichPanel) {
+	// Third Panel
+	xPanel = 50;
+	yPanel = 400;
+	lineDrawer_Alternate(xPanel + x0,
+						 yPanel + y0,
+						 xPanel + x1,
+						 yPanel + y1, count, color);
 
-		case (ONE):
-			xPanel = 50;
-			yPanel = 50;
-			lineDrawer_DDA(xPanel + beginRandomX, 
-						   yPanel + endRandomX, 
-						   xPanel + endRandomX, 
-						   xPanel + endRandomY, 0xffccccff);
-			break;
-		case (TWO):
-			xPanel = 400;
-			yPanel = 50;
-			lineDrawer_Bresenham(xPanel + beginRandomX, 
-								 yPanel + endRandomX, 
-								 xPanel + endRandomX, 
-								 xPanel + endRandomY, 0xffccccff);
-			break;
-		case (THREE):
-			xPanel = 50;
-			yPanel = 400;
-			lineDrawer_Alternate(xPanel + beginRandomX,
-								 yPanel + endRandomX,
-								 xPanel + endRandomX,
-								 xPanel + endRandomY, i, 0xffccccff);
-			break;
-		}
-	}
-
-
+	// Forth Panel
+	xPanel = 400;
+	yPanel = 400;
+	antialias_LineRenderer(xPanel + x0,
+						   yPanel + y0,
+						   xPanel + x1,
+						   yPanel + y1, color);
 }
 
 //============================================================
@@ -566,8 +579,6 @@ void Client::alteredFilledPolygonsTest(Panel whichPanel) {
 
 void Client::panelTests(const int pageNumber) {
 
-	// TODO: Create seperate functions that does all testing
-
 	// PanelOne: (50,50) & (350,350)
 	// PanelTwo: (400,50) & (700,350)
 	// PanelThree: (50, 400) & (350,700)
@@ -580,10 +591,6 @@ void Client::panelTests(const int pageNumber) {
 	switch (pageNumber) {
 		
 	case 1:
-		// Determine the center of the each panel
-		// 1: std::tuple<int, int> centerOfPanels()? Do we need to show our calculations through coding
-		// 2: Calculate the centers of each panel on paper then set them as constants [Easier]
-
 		starBurstTest(std::get<0>(panelOne),std::get<1>(panelOne), ONE);
 		starBurstTest(std::get<0>(panelTwo), std::get<1>(panelTwo), TWO);
 		starBurstTest(std::get<0>(panelThree), std::get<1>(panelThree), THREE);
@@ -598,10 +605,15 @@ void Client::panelTests(const int pageNumber) {
 		break;
 	
 	case 3:
-		randomTest(ONE);
-		randomTest(TWO);
-		randomTest(THREE);
-		randomTest(FOUR);
+		srand(time(NULL));
+		for (int i = 0; i <= 30; i++)
+		{
+			int beginRandomX = rand() % 299;
+			int beginRandomY = rand() % 299;
+			int endRandomX = rand() % 299;
+			int endRandomY = rand() % 299;
+			randomTest(beginRandomX, beginRandomY, endRandomX, endRandomY, i);
+		}
 		break;
 
 	case 4:
