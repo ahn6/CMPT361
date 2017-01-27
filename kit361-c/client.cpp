@@ -416,6 +416,21 @@ void Client::antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int
 	//TODO: Implement
 }
 
+//============================================================
+void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, float y3, unsigned int color)
+{
+	float m1 = (y1 - y3) / (x2 - x3);
+	int xleft = x3;
+	int xright = 0;
+
+	for (int y = y3; y < y1; y++)
+	{
+		xleft += (1 / m1);
+		//lineDrawer_DDA()
+	}
+
+
+}
 
 //============================================================
 // All possible tests that is required by the assignment
@@ -568,8 +583,24 @@ void Client::randomTest(int x0, int y0, int x1, int y1, int count) {
 }
 
 //============================================================
-void Client::filledPolygonsTest(Panel whichPanel) {
-	// TODO: Implement filled polygons
+void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
+
+	for (int i = 1; i <= 1; i++)
+	{
+		int color = calculate_LineColor();
+		std::tuple<float, float> P1 = calculate_StarBurstAngles(centreX, centreY, i);
+		std::tuple<float, float> P3 = calculate_StarBurstAngles(centreX, centreY, i+1);
+
+		switch (whichPanel) {
+		// We know that the first point P1 (x1,y1) starts in the centre for all polygons
+		// Panel one: 
+		case(ONE):
+			lineDrawer_DDA(centreX, centreY, std::get<0>(P1), std::get<1>(P1), color);
+			lineDrawer_DDA(centreX, centreY, std::get<0>(P3), std::get<1>(P3), color);
+			lineDrawer_DDA(std::get<0>(P1), std::get<1>(P1), std::get<0>(P3), std::get<1>(P3), color);
+			polygonRenderer(centreX, centreY, std::get<0>(P1), std::get<1>(P1), std::get<0>(P3), std::get<1>(P3), color);
+		}
+	}
 }
 
 //============================================================
@@ -617,10 +648,10 @@ void Client::panelTests(const int pageNumber) {
 		break;
 
 	case 4:
-		filledPolygonsTest(ONE);
-		filledPolygonsTest(TWO);
-		filledPolygonsTest(THREE);
-		filledPolygonsTest(FOUR);
+		filledPolygonsTest(std::get<0>(panelOne), std::get<1>(panelOne), ONE);
+		filledPolygonsTest(std::get<0>(panelTwo), std::get<1>(panelTwo), TWO);
+		filledPolygonsTest(std::get<0>(panelThree), std::get<1>(panelThree), THREE);
+		filledPolygonsTest(std::get<0>(panelFour), std::get<1>(panelFour), FOUR);
 		break;
 		
 	case 5:
