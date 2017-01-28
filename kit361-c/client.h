@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cmath>
 #include <ctime>
+#include <vector>
 
 typedef enum {ONE, TWO, THREE, FOUR} Panel;
 typedef enum {OctOne, OctTwo, OctThree, OctFour, OctFive, OctSix, OctSeven, OctEight} Octant;
@@ -37,8 +38,23 @@ public:
 	//============================================================
 	int calculate_LineColor();
 
+	//============================================================
+	// Order the incoming points in terms of the highest y value
+	// Sets values in a vector
+	//
+	// TODO: Generalize the equation for all points, possibly by storing into a vector
+	// Then organize that vector
+	// Returns the vector with ordered coordinates
+	//============================================================
+	void orderedCoordinates(int x1, int y1, int x2, int y2, int x3, int y3);
+
 private:
     Drawable *drawable;
+	struct polygonCoordinates {
+		int x = 0;
+		int y = 0;
+	};
+	std::vector<polygonCoordinates> orderedPolygonCoordinates;
     void draw_rect(int x1, int y1, int x2, int y2, unsigned int color);
 
 	//============================================================

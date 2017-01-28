@@ -2,6 +2,19 @@
 
 # define M_PI           3.14159265358979323846  /* pi */
 
+int maxYValue(int y1, int y2, int y3) {
+	int max = y1;
+	if (y2 > max)
+	{
+		max = y2;
+	}
+	if (y3 > max)
+	{
+		max = y3;
+	}
+	return max;
+}
+
 Client::Client(Drawable *drawable)
 {
     this->drawable = drawable;
@@ -113,6 +126,92 @@ int Client::calculate_LineColor()
 	int b = rand() % 255;
 	int color = (0xff << 24) + ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
 	return color;
+}
+
+//============================================================
+// Order the incoming points from highest Y to lowest Y
+void Client::orderedCoordinates(int x1, int y1, int x2, int y2, int x3, int y3) {
+	polygonCoordinates storageOfCoordinates;
+	int highestYValue = maxYValue(y1, y2, y3);
+
+	if (highestYValue == y1)
+	{
+		storageOfCoordinates.x = x1;
+		storageOfCoordinates.y = y1;
+		orderedPolygonCoordinates.push_back(storageOfCoordinates);
+		if (y2 > y3)
+		{
+			storageOfCoordinates.x = x2;
+			storageOfCoordinates.y = y2;
+			orderedPolygonCoordinates.push_back(storageOfCoordinates);
+
+			storageOfCoordinates.x = x3;
+			storageOfCoordinates.y = y3;
+			orderedPolygonCoordinates.push_back(storageOfCoordinates);
+		}
+		else
+		{
+			storageOfCoordinates.x = x3;
+			storageOfCoordinates.y = y3;
+			orderedPolygonCoordinates.push_back(storageOfCoordinates);
+
+			storageOfCoordinates.x = x2;
+			storageOfCoordinates.y = y2;
+			orderedPolygonCoordinates.push_back(storageOfCoordinates);
+		}
+	}
+	else if (highestYValue == y2)
+	{
+		storageOfCoordinates.x = x2;
+		storageOfCoordinates.y = y2;
+		orderedPolygonCoordinates.push_back(storageOfCoordinates);
+		if (y1 > y3)
+		{
+			storageOfCoordinates.x = x1;
+			storageOfCoordinates.y = y1;
+			orderedPolygonCoordinates.push_back(storageOfCoordinates);
+
+			storageOfCoordinates.x = x3;
+			storageOfCoordinates.y = y3;
+			orderedPolygonCoordinates.push_back(storageOfCoordinates);
+		}
+		else
+		{
+			storageOfCoordinates.x = x3;
+			storageOfCoordinates.y = y3;
+			orderedPolygonCoordinates.push_back(storageOfCoordinates);
+
+			storageOfCoordinates.x = x1;
+			storageOfCoordinates.y = y1;
+			orderedPolygonCoordinates.push_back(storageOfCoordinates);
+		}
+	}
+	else
+	{
+		storageOfCoordinates.x = x3;
+		storageOfCoordinates.y = y3;
+		orderedPolygonCoordinates.push_back(storageOfCoordinates);
+		if (y1 > y2)
+		{
+			storageOfCoordinates.x = x1;
+			storageOfCoordinates.y = y1;
+			orderedPolygonCoordinates.push_back(storageOfCoordinates);
+
+			storageOfCoordinates.x = x2;
+			storageOfCoordinates.y = y2;
+			orderedPolygonCoordinates.push_back(storageOfCoordinates);
+		}
+		else
+		{
+			storageOfCoordinates.x = x2;
+			storageOfCoordinates.y = y2;
+			orderedPolygonCoordinates.push_back(storageOfCoordinates);
+
+			storageOfCoordinates.x = x1;
+			storageOfCoordinates.y = y1;
+			orderedPolygonCoordinates.push_back(storageOfCoordinates);
+		}
+	}
 }
 
 //============================================================
@@ -419,17 +518,58 @@ void Client::antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int
 //============================================================
 void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, float y3, unsigned int color)
 {
-	float m1 = (y1 - y3) / (x2 - x3);
-	int xleft = x3;
-	int xright = 0;
+	// In terms of Y 
+	float m_x1y1_x2y2 = (y2 - y1) / (x2 - x1); // Lowest P -> Middle P
+	float m_x1y1_x3y3 = (y3 - y1) / (x3 - x1); // Lowest P -> Smallest P
+	float m_x2y2_x3y3 = (y3 - y2) / (x3 - x2); // Middle P -> Smallest P
 
-	for (int y = y3; y < y1; y++)
+	int xleft = x1; // Start from highest Y
+	int xright = x1; // Start from highest Y
+
+	int b_x1y1_x2y2 = y1 - m_x1y1_x2y2*(x1); // Slope for Lowest P -> Middle P
+	int b_x1y1_x3y3 = y1 - m_x1y1_x3y3*(x1); // Slope for Lowest P -> Smallest P
+	int b_x2y2_x3y3 = y2 - m_x2y2_x3y3*(x2); // Slope for Middle P -> Smallest P
+
+	// We should figure out if the middle point is on the left or right from the starting Point
+
+	// Point 2 is on the RIGHT side
+	if (x2 > x1)
 	{
-		xleft += (1 / m1);
-		//lineDrawer_DDA()
+		// This will loop all the way to Point 2
+		for (int y = y1; y >= y2; y--)
+		{
+			xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
+			xright = (y - b_x1y1_x2y2) / m_x1y1_x2y2;
+			lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+		}
+
+		// This will loop from Point 2 to Point 3
+		for (int y = y2; y >= y3; y--)
+		{
+			xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
+			xright = (y - b_x2y2_x3y3) / m_x2y2_x3y3;
+			lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+		}
 	}
+	// Point 2 is on the LEFT side
+	else
+	{
+		// This will loop all the way to Point 2
+		for (int y = y1; y >= y2; y--)
+		{
+			xleft = (y - b_x1y1_x2y2) / m_x1y1_x2y2;
+			xright = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
+			lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+		}
 
-
+		// This will loop from Point 2 to Point 3
+		for (int y = y2; y >= y3; y--)
+		{
+			xleft = (y - b_x2y2_x3y3) / m_x2y2_x3y3;
+			xright = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
+			lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+		}
+	}
 }
 
 //============================================================
@@ -585,20 +725,23 @@ void Client::randomTest(int x0, int y0, int x1, int y1, int count) {
 //============================================================
 void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 
-	for (int i = 1; i <= 1; i++)
+	for (int i = 0; i <= 90; i++)
 	{
-		int color = calculate_LineColor();
-		std::tuple<float, float> P1 = calculate_StarBurstAngles(centreX, centreY, i);
-		std::tuple<float, float> P3 = calculate_StarBurstAngles(centreX, centreY, i+1);
+		//int color = calculate_LineColor();
+		std::tuple<float, float> P3 = calculate_StarBurstAngles(centreX, centreY, i);
+		std::tuple<float, float> P2 = calculate_StarBurstAngles(centreX, centreY, i+1);
 
+		// We now have the three points for our triangle
+		// By convention we shall label the points 
+		// Counterclockwise
+		// P1 - Centre
+		orderedCoordinates(centreX, centreY, std::get<0>(P3), std::get<1>(P3), std::get<0>(P2), std::get<1>(P2));
 		switch (whichPanel) {
-		// We know that the first point P1 (x1,y1) starts in the centre for all polygons
-		// Panel one: 
 		case(ONE):
-			lineDrawer_DDA(centreX, centreY, std::get<0>(P1), std::get<1>(P1), color);
-			lineDrawer_DDA(centreX, centreY, std::get<0>(P3), std::get<1>(P3), color);
-			lineDrawer_DDA(std::get<0>(P1), std::get<1>(P1), std::get<0>(P3), std::get<1>(P3), color);
-			polygonRenderer(centreX, centreY, std::get<0>(P1), std::get<1>(P1), std::get<0>(P3), std::get<1>(P3), color);
+			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+							orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+							orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffff0080);
+			orderedPolygonCoordinates.clear();
 		}
 	}
 }
