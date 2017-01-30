@@ -105,7 +105,7 @@ private:
 	// 2) if (y2 - y1 < 0) --> Octants: 5 6 7 8
 	// Lines in each octant are then calculated and drawned based on 
 	// the incremental steps (dx or dy) and where the end points and 
-	// start points lie in the the panel/
+	// start points lie in the the panel
 	//============================================================
 	void lineDrawer_Bresenham(int x1, int y1, int x2, int y2, unsigned int color);
 
@@ -152,7 +152,7 @@ private:
 	void filledPolygonsTest(int centreX, int centreY, Panel whichPanel);
 
 	//============================================================
-	void alteredFilledPolygonsTest(Panel whichPanel);
+	void alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPanel);
 
 
 

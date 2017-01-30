@@ -124,6 +124,7 @@ int Client::calculate_LineColor()
 	int r = rand() % 255;
 	int g = rand() % 255;
 	int b = rand() % 255;
+
 	int color = (0xff << 24) + ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
 	return color;
 }
@@ -511,7 +512,6 @@ void Client::lineDrawer_Alternate(int x1, int y1, int x2, int y2, int count, uns
 
 //============================================================
 void Client::antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int color) {
-
 	//TODO: Implement
 }
 
@@ -816,7 +816,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 				orderedCoordinates(centreX, centreY, std::get<0>(P3), std::get<1>(P3), std::get<0>(P2), std::get<1>(P2));
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 								orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-								orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff);
+								orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, color);
 				orderedPolygonCoordinates.clear();
 			}
 			break;
@@ -925,8 +925,132 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 }
 
 //============================================================
-void Client::alteredFilledPolygonsTest(Panel whichPanel) {
-	// TODO: Implement altered version of filled polygons
+void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
+	// Panel 3 stuff
+	int xRandom = 0;
+	int yRandom = 0;
+
+	// Panel 4 stuff
+	int xPanel = 400;
+	int yPanel = 400;
+
+	int r = 255; //rand() % 255;
+	int g = 255; //rand() % 255;
+	int b = 255;// rand() % 255;
+	double opacity = 0.14;
+	switch (whichPanel) {
+	case(ONE):
+		for (int i = 0; i <= 90; i++)
+		{
+			std::tuple<float, float> P3 = calculate_StarBurstAngles(centreX, centreY, i);
+			std::tuple<float, float> P2 = calculate_StarBurstAngles(centreX, centreY, i + 1);
+			orderedCoordinates(centreX, centreY, std::get<0>(P3), std::get<1>(P3), std::get<0>(P2), std::get<1>(P2));
+			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+				orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff);
+			orderedPolygonCoordinates.clear();
+		}
+		break;
+	case(TWO):
+		// The panel starts at 400, 50
+		// The panel ends at 700, 350
+		// Total panel size: 300
+		// Margins will be 15
+		// 10 rows/columns make 30 per block
+		// TODO: Fix sorting order
+
+		grid gridSetupNormal[10][10];
+
+		// This stores the related points for the grid
+		for (int i = 0; i <= 9; i++) {
+			for (int j = 0; j <= 9; j++) {
+				gridSetupNormal[i][j].x = 415 + 30 * j;
+				gridSetupNormal[i][j].y = 65 + 30 * i;
+				//drawable->setPixel(gridSetup[i][j].x, gridSetup[i][j].y, 0xffffffff);
+			}
+		}
+
+		// Render Triangles
+		for (int i = 0; i < 9; i++) {
+			for (int j = 0; j < 9; j++) {
+				orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
+					gridSetupNormal[i + 1][j + 1].x, gridSetupNormal[i + 1][j + 1].y,
+					gridSetupNormal[i][j + 1].x, gridSetupNormal[i][j + 1].y);
+				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff);
+				orderedPolygonCoordinates.clear();
+
+				orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
+					gridSetupNormal[i + 1][j + 1].x, gridSetupNormal[i + 1][j + 1].y,
+					gridSetupNormal[i + 1][j].x, gridSetupNormal[i + 1][j].y);
+				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff);
+				orderedPolygonCoordinates.clear();
+			}
+		}
+		break;
+	case (THREE):
+		grid gridSetupRandom[10][10];
+		// This stores the related points for the grid
+		for (int i = 0; i <= 9; i++) {
+			for (int j = 0; j <= 9; j++) {
+				gridSetupRandom[i][j].x = 65 + 30 * j;
+				gridSetupRandom[i][j].y = 415 + 30 * i;
+
+				xRandom = (rand() % 12) - 12;
+				yRandom = (rand() % 12) - 12;
+
+				gridSetupRandom[i][j].x = gridSetupRandom[i][j].x + xRandom;
+				gridSetupRandom[i][j].y = gridSetupRandom[i][j].y + yRandom;
+				//drawable->setPixel(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y, 0xffffffff);
+			}
+		}
+
+		// Render these triangles
+		for (int i = 0; i < 9; i++) {
+			for (int j = 0; j < 9; j++) {
+				orderedCoordinates(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y,
+					gridSetupRandom[i + 1][j + 1].x, gridSetupRandom[i + 1][j + 1].y,
+					gridSetupRandom[i][j + 1].x, gridSetupRandom[i][j + 1].y);
+				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+				orderedPolygonCoordinates.clear();
+
+				orderedCoordinates(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y,
+					gridSetupRandom[i + 1][j + 1].x, gridSetupRandom[i + 1][j + 1].y,
+					gridSetupRandom[i + 1][j].x, gridSetupRandom[i + 1][j].y);
+				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+				orderedPolygonCoordinates.clear();
+			}
+		}
+		break;
+	case(FOUR):
+		srand(time(NULL));
+		for (int i = 0; i <= 20; i++)
+		{
+			int P1_x = rand() % 299;
+			int P1_y = rand() % 299;
+
+			int P2_x = rand() % 299;
+			int P2_y = rand() % 299;
+
+			int P3_x = rand() % 299;
+			int P3_y = rand() % 299;
+
+			orderedCoordinates(xPanel + P1_x, yPanel + P1_y,
+				xPanel + P2_x, yPanel + P2_y,
+				xPanel + P3_x, yPanel + P3_y);
+			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+				orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+			orderedPolygonCoordinates.clear();
+		}
+	}
 }
 
 void Client::panelTests(const int pageNumber) {
@@ -976,10 +1100,10 @@ void Client::panelTests(const int pageNumber) {
 		break;
 		
 	case 5:
-		alteredFilledPolygonsTest(ONE);
-		alteredFilledPolygonsTest(TWO);
-		alteredFilledPolygonsTest(THREE);
-		alteredFilledPolygonsTest(FOUR);
+		alteredFilledPolygonsTest(std::get<0>(panelOne), std::get<1>(panelOne), ONE);
+		alteredFilledPolygonsTest(std::get<0>(panelTwo), std::get<1>(panelTwo), TWO);
+		alteredFilledPolygonsTest(std::get<0>(panelThree), std::get<1>(panelThree), THREE);
+		alteredFilledPolygonsTest(std::get<0>(panelFour), std::get<1>(panelFour), FOUR);
 		break;
 
 	case 6:
