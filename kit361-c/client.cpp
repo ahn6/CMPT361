@@ -114,7 +114,7 @@ std::tuple<float, float> Client::calculate_StarBurstAngles(int centreX, int cent
 
 	length = centreX + length;
 	height = centreY + height;
-	return std::make_tuple(length, height);
+	return std::make_tuple(std::round(length), std::round(height));
 }
 
 //============================================================
@@ -518,56 +518,128 @@ void Client::antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int
 //============================================================
 void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, float y3, unsigned int color)
 {
-	// In terms of Y 
-	float m_x1y1_x2y2 = (y2 - y1) / (x2 - x1); // Lowest P -> Middle P
-	float m_x1y1_x3y3 = (y3 - y1) / (x3 - x1); // Lowest P -> Smallest P
+	float m_x1y1_x3y3 = (y3 - y1) / (x3 - x1); // Highest P -> Smallest P
 	float m_x2y2_x3y3 = (y3 - y2) / (x3 - x2); // Middle P -> Smallest P
+	float b_x1y1_x3y3 = y1 - m_x1y1_x3y3*(x1); // Slope for Lowest P -> Smallest P
+	float b_x2y2_x3y3 = y2 - m_x2y2_x3y3*(x2); // Slope for Middle P -> Smallest P
 
 	int xleft = x1; // Start from highest Y
 	int xright = x1; // Start from highest Y
 
-	int b_x1y1_x2y2 = y1 - m_x1y1_x2y2*(x1); // Slope for Lowest P -> Middle P
-	int b_x1y1_x3y3 = y1 - m_x1y1_x3y3*(x1); // Slope for Lowest P -> Smallest P
-	int b_x2y2_x3y3 = y2 - m_x2y2_x3y3*(x2); // Slope for Middle P -> Smallest P
+	// Based on the sorting of the coordinates
+	// there two possible ways to get a vertical line
 
-	// We should figure out if the middle point is on the left or right from the starting Point
 
-	// Point 2 is on the RIGHT side
-	if (x2 > x1)
+	// 1) If x2 - x1 == 0 means we have a triangle 
+	//
+	// P3 -> + + + + + + <- P2   or similarly...   P2-> + + + + + + <- P3
+	//                 +								+		  		
+	//                 +								+			
+	//				   ^ P1							 P1 ^
+	if (x2 - x1 == 0)
 	{
-		// This will loop all the way to Point 2
-		for (int y = y1; y >= y2; y--)
-		{
-			xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
-			xright = (y - b_x1y1_x2y2) / m_x1y1_x2y2;
-			lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
-		}
 
-		// This will loop from Point 2 to Point 3
-		for (int y = y2; y >= y3; y--)
+		// Lets assume the line is on the right side
+		// The right line from P1 -> P2 is vertical
+		// Slope: N/A & b-intercept: N/A
+		if (x1 > x3)
 		{
-			xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
-			xright = (y - b_x2y2_x3y3) / m_x2y2_x3y3;
-			lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+			for (int y = y1; y >= y2; y--)
+			{
+				xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
+				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+			}
+		}
+		// line is on the left side
+		// The left line from P1 -> P2 is vertical
+		// Slope: N/A & b-intercept: N/A
+		else
+		{
+			for (int y = y1; y >= y2; y--)
+			{
+				xright = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
+				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+			}
 		}
 	}
-	// Point 2 is on the LEFT side
+
+	// If x2 - x3 == 0 then we have a triangle of the following
+	//
+	// P3 -> +													+ <- P3
+	//		 +					or similarly..					+
+	// P2 -> + + + + + + <- P1					P1 -> + + + + + + <- P2
+	else if (x2 - x3 == 0)
+	{
+		// We should consider which side the vertical line is on
+		xright = x2;
+		xleft = x2;
+		// The vertical line is on the left
+		if (x1 > x2)
+		{
+			for (int y = y3; y <= y2; y++)
+			{
+				xright = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
+				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+
+			}
+		}
+		// The vertical line is on the right
+		else
+		{
+			for (int y = y3; y <= y2; y++)
+			{
+				xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
+				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+
+			}
+		}
+	}
+
 	else
 	{
-		// This will loop all the way to Point 2
-		for (int y = y1; y >= y2; y--)
-		{
-			xleft = (y - b_x1y1_x2y2) / m_x1y1_x2y2;
-			xright = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
-			lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
-		}
+		// If the the middle x is the same as lowest x
+		float m_x1y1_x2y2 = (y2 - y1) / (x2 - x1); // Highest P -> Middle P
+		int b_x1y1_x2y2 = y1 - m_x1y1_x2y2*(x1); // Slope for Lowest P -> Middle P
 
-		// This will loop from Point 2 to Point 3
-		for (int y = y2; y >= y3; y--)
+		// This only is conisdered when we do not have a vertical line
+		// We should figure out if the middle point is on the left or right from the starting Point
+		// Point 2 is on the RIGHT side
+		if (x2 > x1)
 		{
-			xleft = (y - b_x2y2_x3y3) / m_x2y2_x3y3;
-			xright = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
-			lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+			// This will loop all the way to Point 2
+			for (int y = y1; y >= y2; y--)
+			{
+				xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
+				xright = (y - b_x1y1_x2y2) / m_x1y1_x2y2;
+				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+			}
+
+			// This will loop from Point 2 to Point 3
+			for (int y = y2; y >= y3; y--)
+			{
+				xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
+				xright = (y - b_x2y2_x3y3) / m_x2y2_x3y3;
+				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+			}
+		}
+		// Point 2 is on the LEFT side
+		else
+		{
+			// This will loop all the way to Point 2
+			for (int y = y1; y >= y2; y--)
+			{
+				xleft = (y - b_x1y1_x2y2) / m_x1y1_x2y2;
+				xright = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
+				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+			}
+
+			// This will loop from Point 2 to Point 3
+			for (int y = y2; y >= y3; y--)
+			{
+				xleft = (y - b_x2y2_x3y3) / m_x2y2_x3y3;
+				xright = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
+				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+			}
 		}
 	}
 }
@@ -594,16 +666,16 @@ void Client::starBurstTest(int centreX, int centreY, Panel whichPanel) {
 		switch (whichPanel) {
 
 		case (ONE):
-			lineDrawer_DDA(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), color);
+			lineDrawer_DDA(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffffffff);
 			break;
 		case (TWO):
-			lineDrawer_Bresenham(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), color);
+			lineDrawer_Bresenham(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffffffff);
 			break;
 		case (THREE):
-			lineDrawer_Alternate(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), i, color);
+			lineDrawer_Alternate(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), i, 0xffffffff);
 			break;
 		case (FOUR):
-			antialias_LineRenderer(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), color); // TODO
+			antialias_LineRenderer(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffffffff); // TODO
 			break;
 		}
 	}
@@ -635,11 +707,11 @@ void Client::parallelogramTest(Panel whichPanel) {
 			lineDrawer_DDA(xPanel + xStart_1, 
 						   yPanel + yStart_1 + i, 
 						   xPanel + xEnd_1, 
-						   yPanel + yEnd_1 + i, color);
+						   yPanel + yEnd_1 + i, 0xffffffff);
 			lineDrawer_DDA(xPanel + xStart_2 + i,
 						   yPanel + yStart_2, 
 						   xPanel + xEnd_2 + i, 
-						   yPanel + yEnd_2, color);
+						   yPanel + yEnd_2, 0xffffffff);
 			break;
 		case (TWO):
 			xPanel = 400;
@@ -647,11 +719,11 @@ void Client::parallelogramTest(Panel whichPanel) {
 			lineDrawer_Bresenham(xPanel + xStart_1,
 				yPanel + yStart_1 + i,
 				xPanel + xEnd_1,
-				yPanel + yEnd_1 + i, color);
+				yPanel + yEnd_1 + i, 0xffffffff);
 			lineDrawer_Bresenham(xPanel + xStart_2 + i,
 				yPanel + yStart_2,
 				xPanel + xEnd_2 + i,
-				yPanel + yEnd_2, color);
+				yPanel + yEnd_2, 0xffffffff);
 			break;
 		case(THREE):
 			xPanel = 50;
@@ -659,11 +731,11 @@ void Client::parallelogramTest(Panel whichPanel) {
 			lineDrawer_Alternate(xPanel + xStart_1,
 				yPanel + yStart_1 + i,
 				xPanel + xEnd_1,
-				yPanel + yEnd_1 + i, i, color);
+				yPanel + yEnd_1 + i, i, 0xffffffff);
 			lineDrawer_Alternate(xPanel + xStart_2 + i,
 				yPanel + yStart_2,
 				xPanel + xEnd_2 + i,
-				yPanel + yEnd_2, i, color);
+				yPanel + yEnd_2, i, 0xffffffff);
 			break;
 		case(FOUR):
 			xPanel = 400;
@@ -671,11 +743,11 @@ void Client::parallelogramTest(Panel whichPanel) {
 			antialias_LineRenderer(xPanel + xStart_1,
 								   yPanel + yStart_1 + i,
 								   xPanel + xEnd_1,
-								   yPanel + yEnd_1 + i, color);
+								   yPanel + yEnd_1 + i, 0xffffffff);
 			antialias_LineRenderer(xPanel + xStart_2 + i,
 								   yPanel + yStart_2,
 								   xPanel + xEnd_2 + i,
-								   yPanel + yEnd_2, color);
+								   yPanel + yEnd_2, 0xffffffff);
 			break;
 		}
 	}
@@ -725,25 +797,131 @@ void Client::randomTest(int x0, int y0, int x1, int y1, int count) {
 //============================================================
 void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 
-	for (int i = 0; i <= 90; i++)
-	{
-		//int color = calculate_LineColor();
-		std::tuple<float, float> P3 = calculate_StarBurstAngles(centreX, centreY, i);
-		std::tuple<float, float> P2 = calculate_StarBurstAngles(centreX, centreY, i+1);
+	// Panel 3 stuff
+	int xRandom = 0;
+	int yRandom = 0;
 
-		// We now have the three points for our triangle
-		// By convention we shall label the points 
-		// Counterclockwise
-		// P1 - Centre
-		orderedCoordinates(centreX, centreY, std::get<0>(P3), std::get<1>(P3), std::get<0>(P2), std::get<1>(P2));
+	// Panel 4 stuff
+	int xPanel = 400;
+	int yPanel = 400;
+
+
 		switch (whichPanel) {
 		case(ONE):
-			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
-							orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-							orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffff0080);
-			orderedPolygonCoordinates.clear();
+			for (int i = 0; i <= 90; i++)
+			{
+				int color = calculate_LineColor();
+				std::tuple<float, float> P3 = calculate_StarBurstAngles(centreX, centreY, i);
+				std::tuple<float, float> P2 = calculate_StarBurstAngles(centreX, centreY, i + 1);
+				orderedCoordinates(centreX, centreY, std::get<0>(P3), std::get<1>(P3), std::get<0>(P2), std::get<1>(P2));
+				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+								orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+								orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff);
+				orderedPolygonCoordinates.clear();
+			}
+			break;
+		case(TWO):
+			// The panel starts at 400, 50
+			// The panel ends at 700, 350
+			// Total panel size: 300
+			// Margins will be 15
+			// 10 rows/columns make 30 per block
+			// TODO: Fix sorting order
+
+			grid gridSetupNormal[10][10];
+
+			// This stores the related points for the grid
+			for (int i = 0; i <= 9; i++) {
+				for (int j = 0; j <= 9; j++) {
+					gridSetupNormal[i][j].x = 415 + 30 * j;
+					gridSetupNormal[i][j].y = 65 + 30 * i;
+					//drawable->setPixel(gridSetup[i][j].x, gridSetup[i][j].y, 0xffffffff);
+				}
+			}
+
+			// Render Triangles
+			for (int i = 0; i < 9; i++) {
+				for (int j = 0; j < 9; j++) {
+					orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
+									   gridSetupNormal[i + 1][j + 1].x, gridSetupNormal[i + 1][j + 1].y,
+									   gridSetupNormal[i][j + 1].x, gridSetupNormal[i][j + 1].y);
+					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+									orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+					orderedPolygonCoordinates.clear();
+
+					orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
+									   gridSetupNormal[i + 1][j + 1].x, gridSetupNormal[i + 1][j + 1].y,
+									   gridSetupNormal[i + 1][j].x, gridSetupNormal[i + 1][j].y);
+					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+						orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+						orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+					orderedPolygonCoordinates.clear();
+				}
+			}
+
+
+			break;
+		case (THREE):
+			grid gridSetupRandom[10][10];
+			// This stores the related points for the grid
+			for (int i = 0; i <= 9; i++) {
+				for (int j = 0; j <= 9; j++) {
+					gridSetupRandom[i][j].x = 65 + 30 * j;
+					gridSetupRandom[i][j].y = 415 + 30 * i;
+
+					xRandom = (rand() % 12) - 12;
+					yRandom = (rand() % 12) - 12;
+
+					gridSetupRandom[i][j].x = gridSetupRandom[i][j].x + xRandom;
+					gridSetupRandom[i][j].y = gridSetupRandom[i][j].y + yRandom;
+					//drawable->setPixel(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y, 0xffffffff);
+				}
+			}
+
+			// Render these triangles
+			for (int i = 0; i < 9; i++) {
+				for (int j = 0; j < 9; j++) {
+					orderedCoordinates(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y,
+									   gridSetupRandom[i + 1][j + 1].x, gridSetupRandom[i + 1][j + 1].y,
+						               gridSetupRandom[i][j + 1].x, gridSetupRandom[i][j + 1].y);
+					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+									orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+					orderedPolygonCoordinates.clear();
+
+					orderedCoordinates(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y,
+									   gridSetupRandom[i + 1][j + 1].x, gridSetupRandom[i + 1][j + 1].y,
+									   gridSetupRandom[i + 1][j].x, gridSetupRandom[i + 1][j].y);
+					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+									orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+					orderedPolygonCoordinates.clear();
+				}
+			}
+			break;
+		case(FOUR):
+			srand(time(NULL));
+			for (int i = 0; i <= 20; i++)
+			{
+				int P1_x = rand() % 299;
+				int P1_y = rand() % 299;
+
+				int P2_x = rand() % 299;
+				int P2_y = rand() % 299;
+
+				int P3_x = rand() % 299;
+				int P3_y = rand() % 299;
+
+				orderedCoordinates(xPanel + P1_x, yPanel + P1_y, 
+								   xPanel + P2_x, yPanel + P2_y,
+								   xPanel + P3_x, yPanel + P3_y);
+				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+								orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+								orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+				orderedPolygonCoordinates.clear();
+			}
 		}
-	}
 }
 
 //============================================================
