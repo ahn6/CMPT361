@@ -7,15 +7,26 @@
 #include <cmath>
 #include <ctime>
 #include <vector>
+#include <fstream>
+#include <sstream>
+#include <cstdlib>
 
 typedef enum {ONE, TWO, THREE, FOUR} Panel;
 typedef enum {OctOne, OctTwo, OctThree, OctFour, OctFive, OctSix, OctSeven, OctEight} Octant;
 
-struct grid {
+struct grid 
+{
 	int x;
 	int y;
 };
 
+struct RGBColour
+{
+	unsigned int r;
+	unsigned int g;
+	unsigned int b;
+	unsigned int o;
+};
 class Client : public PageTurner
 {
 public:
@@ -42,7 +53,17 @@ public:
 	// Calcuate the color values for the lines
 	//
 	//============================================================
-	int calculate_LineColor();
+	unsigned int calculate_LineColor();
+
+	//============================================================
+	// Unpack a colour 
+	//============================================================
+	RGBColour unpackColour(unsigned int currentColour);
+
+	//============================================================
+	// Pack a colour 
+	//============================================================
+	unsigned int packColour(RGBColour currentColour);
 
 	//============================================================
 	// Order the incoming points in terms of the highest y value
@@ -87,8 +108,12 @@ private:
 	//    b) If dy is < 0, this means we know that the endpoint Y is less than the centre Y
 	//		 which means we can do our X calculation while decreasing Y to the endpoint.
 	//		 ex: centre (200,200), endpoint (y(-300),-300) - Keep decreasing Y and calculating X
+	//
+	// [Feb 11 2017] Assignment 2: We will now interpolate colours
+	// The DDA lindrawer function will now take two colours so
+	// we can calculate and interpolate
 	//============================================================
-	void lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color);
+	void lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color1, unsigned int color2);
 
 	//============================================================
 	// Bresenham's Algorithm
@@ -132,12 +157,51 @@ private:
 	void polygonRenderer(float x1, float y1, float x2, float y2, float x3, float y3, unsigned int color);
 
 	//============================================================
-	// Possible Tests
+	// Main interface to read the input simp file
+	// This will also ignore comments and invalid lines
+	// 
+	// Returns false if the file cannot be opened
+	bool simpFileOpener(std::string fileName);
+
+	//============================================================
+	// This is interpret the current line by splitting the line
+	// into parts
+	//
+	// 
+	// Returns false if the key words are invalid
+	bool simpFileInterpreter(std::string currentLine);
+
+	//============================================================
+	// Possible Tests for Assignment 2
 	//============================================================
 
 	//============================================================
 	// Main interface to interact with the tests
-	void panelTests(const int currentPage);
+	void panelTests2(const int currentPage);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	//============================================================
+	// DECOMISSIONED Possible Tests for Assignment 1
+	//============================================================
+
+	//============================================================
+	// Main interface to interact with the tests
+	void panelTests1(const int currentPage);
 
 	//============================================================
 	void starBurstTest(int centreX, int centreY, Panel whichPanel);
@@ -153,10 +217,6 @@ private:
 
 	//============================================================
 	void alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPanel);
-
-	//============================================================
-	// This last push is the end for Assignment 1
-	//============================================================
 
 
 

@@ -1,5 +1,4 @@
 #include "client.h"
-
 # define M_PI           3.14159265358979323846  /* pi */
 
 int maxYValue(int y1, int y2, int y3) {
@@ -33,42 +32,27 @@ void Client::nextPage() {
     switch(pageNumber % 6) {
     case 1:
 		draw_rect(0, 0, 750, 750, 0xffffffff);
-		draw_rect( 50,  50, 350, 350, 0x00000000);
-		draw_rect(400, 50, 700, 350, 0x00000000);
-		draw_rect(50, 400, 350, 700, 0x00000000);
-		draw_rect(400, 400, 700, 700, 0x00000000);
+		draw_rect( 50, 50, 700, 700, 0x00000000);
         drawable->updateScreen();   // you must call this to make the display change.
         break;
     case 2:
 		draw_rect(0, 0, 750, 750, 0xffffffff);
-		draw_rect(50, 50, 350, 350, 0x00000000);
-		draw_rect(400, 50, 700, 350, 0x00000000);
-		draw_rect(50, 400, 350, 700, 0x00000000);
-		draw_rect(400, 400, 700, 700, 0x00000000);
+		draw_rect(50, 50, 700, 700, 0x00000000);
 		drawable->updateScreen();
         break;
     case 3:
 		draw_rect(0, 0, 750, 750, 0xffffffff);
-		draw_rect(50, 50, 350, 350, 0x00000000);
-		draw_rect(400, 50, 700, 350, 0x00000000);
-		draw_rect(50, 400, 350, 700, 0x00000000);
-		draw_rect(400, 400, 700, 700, 0x00000000);
+		draw_rect(50, 50, 700, 700, 0x00000000);
 		drawable->updateScreen();
         break;
     case 4:
 		draw_rect(0, 0, 750, 750, 0xffffffff);
-		draw_rect(50, 50, 350, 350, 0x00000000);
-		draw_rect(400, 50, 700, 350, 0x00000000);
-		draw_rect(50, 400, 350, 700, 0x00000000);
-		draw_rect(400, 400, 700, 700, 0x00000000);
+		draw_rect(50, 50, 700, 700, 0x00000000);
 		drawable->updateScreen();
 		break;
 	case 5:
 		draw_rect(0, 0, 750, 750, 0xffffffff);
-		draw_rect(50, 50, 350, 350, 0x00000000);
-		draw_rect(400, 50, 700, 350, 0x00000000);
-		draw_rect(50, 400, 350, 700, 0x00000000);
-		draw_rect(400, 400, 700, 700, 0x00000000);
+		draw_rect(50, 50, 700, 700, 0x00000000);
 		drawable->updateScreen();
 		break;
     default:
@@ -76,7 +60,12 @@ void Client::nextPage() {
         draw_rect(400, 400, 700, 700, 0xff00ff40);
         drawable->updateScreen();
     }
-	panelTests(pageNumber); // Test the specific functionality of each panel on the specific page;
+	// Assignment 1
+	//panelTests1(pageNumber); // Test the specific functionality of each panel on the specific page;
+	
+	// Assignment 2
+	panelTests2(pageNumber);
+
 	drawable->updateScreen();
 }
 
@@ -119,14 +108,34 @@ std::tuple<float, float> Client::calculate_StarBurstAngles(int centreX, int cent
 
 //============================================================
 // This will calculate what random colour to draw for the lines.
-int Client::calculate_LineColor()
+unsigned int Client::calculate_LineColor()
 {
-	int r = rand() % 255;
-	int g = rand() % 255;
-	int b = rand() % 255;
+	int r = rand() % 256;
+	int g = rand() % 256;
+	int b = rand() % 256;
 
-	int color = (0xff << 24) + ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
+	unsigned int color = (0xff << 24) + ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
 	return color;
+}
+
+//============================================================
+// This will unpack a 32 bit colour into Red Green Blue
+RGBColour Client::unpackColour(unsigned int currentColour)
+{
+	RGBColour unpacked;
+
+	unpacked.r = (currentColour >> 16)& 0xff;
+	unpacked.g = (currentColour >> 8) & 0xff;
+	unpacked.b = (currentColour) & 0xff;
+	
+	return unpacked;
+}
+
+//============================================================
+// This will pack the struct into 32 bit value
+unsigned int Client::packColour(RGBColour currentColour)
+{
+	return ((0xff << 24) + ((currentColour.r & 0xff) << 16) + ((currentColour.g & 0xff) << 8) + (currentColour.b & 0xff));
 }
 
 //============================================================
@@ -216,18 +225,76 @@ void Client::orderedCoordinates(int x1, int y1, int x2, int y2, int x3, int y3) 
 }
 
 //============================================================
-void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color) {
+void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color1, unsigned int color2) {
+
+	// Assignment 2: We will now add colour interpolation
+	// 1) Let's unpack both colours that are given to us
+	// 2) Now we have R G B, so we will do our colour calcluation
+	// 3) Repack all the colours
+	// 4) draw the pixel
+
+	RGBColour unpackedColour1 = unpackColour(color1);
+	RGBColour unpackedColour2 = unpackColour(color2);
 
 	// We want to find our y = mx + b components
 	const float dx = x2 - x1;
 	const float dy = y2 - y1;
+
 	float m = dy / dx;
 	float b = y1 - m*x1;
+
+	const float diffR = unpackedColour2.r - unpackedColour1.r;
+	const float diffG = unpackedColour2.g - unpackedColour1.g;
+	const float diffB = unpackedColour2.b - unpackedColour1.b;
 
 	// This will determine what case we are in
 	bool slopeLessThanOne = true;
 
-	if (std::abs(m) >= 1)
+	// Vertical line
+	if (x2 == x1)
+	{
+		if (dy > 0)
+		{
+			RGBColour finalColour;
+			float finalRed = unpackedColour1.r;
+			float finalGreen = unpackedColour1.g;
+			float finalBlue = unpackedColour1.b;
+
+			unsigned int roundRed;
+			unsigned int roundGreen;
+			unsigned int roundBlue;
+
+			float dr = diffR / (y2 - y1);
+			float dg = diffG / (y2 - y1);
+			float db = diffB / (y2 - y1);
+
+			for (int y = y1; y < y2; y++)
+			{
+				finalRed += dr;
+				finalGreen += dg;
+				finalBlue += db;
+
+				roundRed = std::round(finalRed);
+				roundGreen = std::round(finalGreen);
+				roundBlue = std::round(finalBlue);
+
+				finalColour.r = roundRed;
+				finalColour.g = roundGreen;
+				finalColour.b = roundBlue;
+
+				unsigned int finalColourPacked = packColour(finalColour);
+				drawable->setPixel(x2, y, finalColourPacked);
+			}
+		}
+		else
+		{
+			for (int y = y2; y < y1; y++)
+			{
+				drawable->setPixel(x2, y, color1);
+			}
+		}
+	}
+	/*if (std::abs(m) >= 1)
 	{
 		slopeLessThanOne = false;
 	}
@@ -242,7 +309,7 @@ void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color) 
 			for (int x = x1; x < x2; x++)
 			{
 				calculatedY = m*x + b;
-				drawable->setPixel(x, std::round(calculatedY), color);
+				drawable->setPixel(x, std::round(calculatedY), color1);
 			}
 		}
 		// CASE 1b
@@ -251,7 +318,7 @@ void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color) 
 			for (int x = x1; x > x2; x--)
 			{
 				calculatedY = m*x + b;
-				drawable->setPixel(x, std::round(calculatedY), color);
+				drawable->setPixel(x, std::round(calculatedY), color1);
 			}
 		}
 	}
@@ -266,7 +333,7 @@ void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color) 
 			for (int y = y1; y < y2; y++)
 			{
 				calculatedX = (y - b) / m;
-				drawable->setPixel(std::round(calculatedX), y, color);
+				drawable->setPixel(std::round(calculatedX), y, color1);
 			}
 		}
 		// CASE 2b
@@ -275,10 +342,10 @@ void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color) 
 			for (int y = y1; y > y2; y--)
 			{
 				calculatedX = (y - b) / m;
-				drawable->setPixel(std::round(calculatedX), y, color);
+				drawable->setPixel(std::round(calculatedX), y, color1);
 			}
 		}
-	}
+	}*/
 }
 
 //============================================================
@@ -502,7 +569,7 @@ void Client::lineDrawer_Bresenham(int x1, int y1, int x2, int y2, unsigned int c
 void Client::lineDrawer_Alternate(int x1, int y1, int x2, int y2, int count, unsigned int color) {
 	if (count % 2 == 0)
 	{
-		lineDrawer_DDA(x1, y1, x2, y2, color);
+		lineDrawer_DDA(x1, y1, x2, y2, color, 0xffffffff);
 	}
 	else
 	{
@@ -645,10 +712,157 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 }
 
 //============================================================
-// All possible tests that is required by the assignment
+bool Client::simpFileOpener(std::string fileName)
+{
+	std::ifstream file;
+	std::stringstream buffer;
+	file.open(fileName.c_str());
+	if (!file)
+	{
+		return false;
+	}
+	buffer << file.rdbuf();
+	std::string currentLine = buffer.str();
+	
+	// Let's split the input file based on new lines
+	std::istringstream lineToTokenize(currentLine);
+	std::string token;
+	std::vector<std::string> results;
+	while (std::getline(lineToTokenize, token, '\n'))
+	{
+		results.push_back(token);
+	}
+
+	for (int i = 0; i < results.size(); i++)
+	{
+		simpFileInterpreter(results[i]);
+	}
+}
+
+//============================================================
+bool Client::simpFileInterpreter(std::string currentLine)
+{
+	std::vector<std::string> results;
+	// Let's ignore comment lines
+	if (currentLine[0] == '#')
+	{
+		return true;
+	}
+	std::size_t pos = currentLine.find(" ");
+	std::size_t intialPos = 0;
+	while (pos != std::string::npos)
+	{
+		results.push_back(currentLine.substr(intialPos, pos - intialPos));
+		intialPos = pos + 1;
+
+		pos = currentLine.find_first_of(" (),", intialPos);
+	}
+
+	// Let's remove blanks
+	for (std::size_t i = 0; i < results.size(); i++)
+	{
+		if (results[i] == "")
+		{
+			results.erase(results.begin()+i);
+			i = 0;
+		}
+	}
+	return true;
+}
+
+//============================================================
+// All possible tests that are required by Assignment 2
+
+//============================================================
+void Client::panelTests2(const int pageNumber)
+{
+	int xRandom = 0;
+	int yRandom = 0;
+	int colour_1 = calculate_LineColor();
+	std::string fileName = "cube.simp";
+	int colour_2 = calculate_LineColor();
+	switch (pageNumber) {
+
+	// Implementation of wireframe
+	case 1:
+		// TODO: Figure out why interpolation doesn't work on the grid lines
+		// Currently works for one line [hardcoded]
+		lineDrawer_DDA(100, 100, 100, 500, colour_1, colour_2);
+		/*grid gridSetupRandom[10][10];
+		// This stores the related points for the grid
+		for (int i = 0; i <= 9; i++) {
+			for (int j = 0; j <= 9; j++) {
+				gridSetupRandom[i][j].x = 100 + 60 * j;
+				gridSetupRandom[i][j].y = 100 + 60 * i;
+
+				xRandom = (rand() % 12) - 12;
+				yRandom = (rand() % 12) - 12;
+
+				gridSetupRandom[i][j].x = gridSetupRandom[i][j].x + xRandom;
+				gridSetupRandom[i][j].y = gridSetupRandom[i][j].y + yRandom;
+				//drawable->setPixel(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y, 0xffffffff);
+			}
+		}
+
+		// Let's draw the wireframe
+		for (int i = 0; i <= 9; i++) {
+			for (int j = 0; j <= 9; j++) {
+
+				// Generate two random colors
+				int colour_1 = calculate_LineColor();
+				int colour_2 = calculate_LineColor();
+
+
+				// We still need to draw the end borders
+				// I will do conditional statements for corner points otherwise we crash cause of access of illegal point in the array
+				if (i<9) {
+					lineDrawer_DDA(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y, gridSetupRandom[i + 1][j].x, gridSetupRandom[i + 1][j].y, colour_1, colour_2);
+				}
+
+				if (j<9) {
+					lineDrawer_DDA(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y, gridSetupRandom[i][j + 1].x, gridSetupRandom[i][j + 1].y, colour_1, colour_2);
+				}
+
+				// This will draw the diagonal line
+				if (i != 0 && i <= 9 && j < 9) {
+					lineDrawer_DDA(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y, gridSetupRandom[i - 1][j + 1].x, gridSetupRandom[i - 1][j + 1].y, colour_1, colour_2);
+				}
+			}
+		}*/
+		break;
+
+	case 2:
+
+		break;
+
+	case 3:
+		simpFileOpener(fileName);
+		break;
+
+	case 4:
+		break;
+
+	case 5:
+		break;
+
+	case 6:
+		// [OPTIONAL] TODO: Implement positive attributes of polygon or line rendering
+		break;
+
+	default:
+		break;
+	}
+}
+
+
+
+
+
+
+
+//============================================================
+// All possible tests that is required by the assignment 1
 // Currently placed here.. because it outputs something
-// TODO: Figure out how to output the tests properly
-// 
 // Panel One: DDA
 // Panel Two: Bresenham
 // Panel Three: Alternating
@@ -666,7 +880,7 @@ void Client::starBurstTest(int centreX, int centreY, Panel whichPanel) {
 		switch (whichPanel) {
 
 		case (ONE):
-			lineDrawer_DDA(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffffffff);
+			lineDrawer_DDA(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffffffff, 0xffffffff);
 			break;
 		case (TWO):
 			lineDrawer_Bresenham(centreX, centreY, std::get<0>(linesToCreate), std::get<1>(linesToCreate), 0xffffffff);
@@ -707,11 +921,11 @@ void Client::parallelogramTest(Panel whichPanel) {
 			lineDrawer_DDA(xPanel + xStart_1, 
 						   yPanel + yStart_1 + i, 
 						   xPanel + xEnd_1, 
-						   yPanel + yEnd_1 + i, 0xffffffff);
+						   yPanel + yEnd_1 + i, 0xffffffff, 0xffffffff);
 			lineDrawer_DDA(xPanel + xStart_2 + i,
 						   yPanel + yStart_2, 
 						   xPanel + xEnd_2 + i, 
-						   yPanel + yEnd_2, 0xffffffff);
+						   yPanel + yEnd_2, 0xffffffff, 0xffffffff);
 			break;
 		case (TWO):
 			xPanel = 400;
@@ -767,7 +981,7 @@ void Client::randomTest(int x0, int y0, int x1, int y1, int count) {
 	lineDrawer_DDA(xPanel + x0, 
 				   yPanel + y0, 
 				   xPanel + x1, 
-				   xPanel + y1, color);
+				   xPanel + y1, color, 0xffffffff);
 	
 	// Second Panel
 	xPanel = 400;
@@ -875,7 +1089,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 
 					gridSetupRandom[i][j].x = gridSetupRandom[i][j].x + xRandom;
 					gridSetupRandom[i][j].y = gridSetupRandom[i][j].y + yRandom;
-					//drawable->setPixel(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y, 0xffffffff);
+					drawable->setPixel(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y, 0xffffffff);
 				}
 			}
 
@@ -1053,7 +1267,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 	}
 }
 
-void Client::panelTests(const int pageNumber) {
+void Client::panelTests1(const int pageNumber) {
 
 	// PanelOne: (50,50) & (350,350)
 	// PanelTwo: (400,50) & (700,350)
