@@ -19,7 +19,6 @@ Client::Client(Drawable *drawable)
     this->drawable = drawable;
 }
 
-
 void Client::nextPage() {	
 	static int pageNumber = 0;
 	pageNumber++;
@@ -294,7 +293,7 @@ void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color1,
 			}
 		}
 	}
-	/*if (std::abs(m) >= 1)
+	if (std::abs(m) >= 1)
 	{
 		slopeLessThanOne = false;
 	}
@@ -306,19 +305,72 @@ void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color1,
 		// CASE 1a
 		if (dx > 0)
 		{
+			float dr = diffR / (x2 - x1);
+			float dg = diffG / (x2 - x1);
+			float db = diffB / (x2 - x1);
+
+			RGBColour finalColour;
+			float finalRed = unpackedColour1.r;
+			float finalGreen = unpackedColour1.g;
+			float finalBlue = unpackedColour1.b;
+
+			unsigned int roundRed;
+			unsigned int roundGreen;
+			unsigned int roundBlue;
+
 			for (int x = x1; x < x2; x++)
 			{
+				finalRed += dr;
+				finalGreen += dg;
+				finalBlue += db;
+
+				roundRed = std::round(finalRed);
+				roundGreen = std::round(finalGreen);
+				roundBlue = std::round(finalBlue);
+
+				finalColour.r = roundRed;
+				finalColour.g = roundGreen;
+				finalColour.b = roundBlue;
+				unsigned int finalColourPacked = packColour(finalColour);
+
 				calculatedY = m*x + b;
-				drawable->setPixel(x, std::round(calculatedY), color1);
+				drawable->setPixel(x, std::round(calculatedY), finalColourPacked);
 			}
 		}
 		// CASE 1b
 		else
 		{
+			float dr = diffR / (x1 - x2);
+			float dg = diffG / (x1 - x2);
+			float db = diffB / (x1 - x2);
+
+			RGBColour finalColour;
+			float finalRed = unpackedColour1.r;
+			float finalGreen = unpackedColour1.g;
+			float finalBlue = unpackedColour1.b;
+
+			unsigned int roundRed;
+			unsigned int roundGreen;
+			unsigned int roundBlue;
+
+
 			for (int x = x1; x > x2; x--)
 			{
+				finalRed += dr;
+				finalGreen += dg;
+				finalBlue += db;
+
+				roundRed = std::round(finalRed);
+				roundGreen = std::round(finalGreen);
+				roundBlue = std::round(finalBlue);
+
+				finalColour.r = roundRed;
+				finalColour.g = roundGreen;
+				finalColour.b = roundBlue;
+				unsigned int finalColourPacked = packColour(finalColour);
+
 				calculatedY = m*x + b;
-				drawable->setPixel(x, std::round(calculatedY), color1);
+				drawable->setPixel(x, std::round(calculatedY), finalColourPacked);
 			}
 		}
 	}
@@ -330,22 +382,74 @@ void Client::lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color1,
 		// CASE 2a
 		if (dy > 0)
 		{
+			RGBColour finalColour;
+			float finalRed = unpackedColour1.r;
+			float finalGreen = unpackedColour1.g;
+			float finalBlue = unpackedColour1.b;
+
+			unsigned int roundRed;
+			unsigned int roundGreen;
+			unsigned int roundBlue;
+
+			float dr = diffR / (y2 - y1);
+			float dg = diffG / (y2 - y1);
+			float db = diffB / (y2 - y1);
+
 			for (int y = y1; y < y2; y++)
 			{
+				finalRed += dr;
+				finalGreen += dg;
+				finalBlue += db;
+
+				roundRed = std::round(finalRed);
+				roundGreen = std::round(finalGreen);
+				roundBlue = std::round(finalBlue);
+
+				finalColour.r = roundRed;
+				finalColour.g = roundGreen;
+				finalColour.b = roundBlue;
+				unsigned int finalColourPacked = packColour(finalColour);
+
 				calculatedX = (y - b) / m;
-				drawable->setPixel(std::round(calculatedX), y, color1);
+				drawable->setPixel(std::round(calculatedX), y, finalColourPacked);
 			}
 		}
 		// CASE 2b
 		else
 		{
+			RGBColour finalColour;
+			float finalRed = unpackedColour1.r;
+			float finalGreen = unpackedColour1.g;
+			float finalBlue = unpackedColour1.b;
+
+			unsigned int roundRed;
+			unsigned int roundGreen;
+			unsigned int roundBlue;
+
+			float dr = diffR / (y2 - y1);
+			float dg = diffG / (y2 - y1);
+			float db = diffB / (y2 - y1);
+
 			for (int y = y1; y > y2; y--)
 			{
+				finalRed += dr;
+				finalGreen += dg;
+				finalBlue += db;
+
+				roundRed = std::round(finalRed);
+				roundGreen = std::round(finalGreen);
+				roundBlue = std::round(finalBlue);
+
+				finalColour.r = roundRed;
+				finalColour.g = roundGreen;
+				finalColour.b = roundBlue;
+				unsigned int finalColourPacked = packColour(finalColour);
+
 				calculatedX = (y - b) / m;
-				drawable->setPixel(std::round(calculatedX), y, color1);
+				drawable->setPixel(std::round(calculatedX), y, finalColourPacked);
 			}
 		}
-	}*/
+	}
 }
 
 //============================================================
@@ -583,7 +687,7 @@ void Client::antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int
 }
 
 //============================================================
-void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, float y3, unsigned int color)
+void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, float y3, unsigned int color1, unsigned int color2)
 {
 	float m_x1y1_x3y3 = (y3 - y1) / (x3 - x1); // Highest P -> Smallest P
 	float m_x2y2_x3y3 = (y3 - y2) / (x3 - x2); // Middle P -> Smallest P
@@ -614,7 +718,7 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 			for (int y = y1; y >= y2; y--)
 			{
 				xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
-				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
 			}
 		}
 		// line is on the left side
@@ -625,7 +729,7 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 			for (int y = y1; y >= y2; y--)
 			{
 				xright = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
-				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
 			}
 		}
 	}
@@ -646,7 +750,7 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 			for (int y = y3; y <= y2; y++)
 			{
 				xright = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
-				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
 
 			}
 		}
@@ -656,7 +760,7 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 			for (int y = y3; y <= y2; y++)
 			{
 				xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
-				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
 
 			}
 		}
@@ -678,7 +782,7 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 			{
 				xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
 				xright = (y - b_x1y1_x2y2) / m_x1y1_x2y2;
-				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
 			}
 
 			// This will loop from Point 2 to Point 3
@@ -686,7 +790,7 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 			{
 				xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
 				xright = (y - b_x2y2_x3y3) / m_x2y2_x3y3;
-				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
 			}
 		}
 		// Point 2 is on the LEFT side
@@ -697,7 +801,7 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 			{
 				xleft = (y - b_x1y1_x2y2) / m_x1y1_x2y2;
 				xright = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
-				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
 			}
 
 			// This will loop from Point 2 to Point 3
@@ -705,7 +809,7 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 			{
 				xleft = (y - b_x2y2_x3y3) / m_x2y2_x3y3;
 				xright = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
-				lineDrawer_Bresenham(std::round(xleft), y, std::round(xright), y, color);
+				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
 			}
 		}
 	}
@@ -778,17 +882,16 @@ void Client::panelTests2(const int pageNumber)
 {
 	int xRandom = 0;
 	int yRandom = 0;
-	int colour_1 = calculate_LineColor();
+
 	std::string fileName = "cube.simp";
-	int colour_2 = calculate_LineColor();
 	switch (pageNumber) {
 
 	// Implementation of wireframe
 	case 1:
 		// TODO: Figure out why interpolation doesn't work on the grid lines
 		// Currently works for one line [hardcoded]
-		lineDrawer_DDA(100, 100, 100, 500, colour_1, colour_2);
-		/*grid gridSetupRandom[10][10];
+		//lineDrawer_DDA(100, 100, 100, 500, colour_1, colour_2);
+		grid gridSetupRandom[10][10];
 		// This stores the related points for the grid
 		for (int i = 0; i <= 9; i++) {
 			for (int j = 0; j <= 9; j++) {
@@ -809,8 +912,8 @@ void Client::panelTests2(const int pageNumber)
 			for (int j = 0; j <= 9; j++) {
 
 				// Generate two random colors
-				int colour_1 = calculate_LineColor();
-				int colour_2 = calculate_LineColor();
+				unsigned int colour_1 = calculate_LineColor();
+				unsigned int colour_2 = calculate_LineColor();
 
 
 				// We still need to draw the end borders
@@ -828,11 +931,46 @@ void Client::panelTests2(const int pageNumber)
 					lineDrawer_DDA(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y, gridSetupRandom[i - 1][j + 1].x, gridSetupRandom[i - 1][j + 1].y, colour_1, colour_2);
 				}
 			}
-		}*/
+		}
 		break;
 
 	case 2:
+		grid gridSetupNormal[10][10];
 
+		// This stores the related points for the grid
+		for (int i = 0; i <= 9; i++) {
+			for (int j = 0; j <= 9; j++) {
+				gridSetupNormal[i][j].x = 100 + 60 * j;
+				gridSetupNormal[i][j].y = 100 + 60 * i;
+
+				xRandom = (rand() % 12) - 12;
+				yRandom = (rand() % 12) - 12;
+
+				gridSetupNormal[i][j].x = gridSetupNormal[i][j].x + xRandom;
+				gridSetupNormal[i][j].y = gridSetupNormal[i][j].y + yRandom;
+			}
+		}
+
+		// Render Triangles
+		for (int i = 0; i < 9; i++) {
+			for (int j = 0; j < 9; j++) {
+				orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
+					gridSetupNormal[i + 1][j + 1].x, gridSetupNormal[i + 1][j + 1].y,
+					gridSetupNormal[i][j + 1].x, gridSetupNormal[i][j + 1].y);
+				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+				orderedPolygonCoordinates.clear();
+
+				orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
+					gridSetupNormal[i + 1][j + 1].x, gridSetupNormal[i + 1][j + 1].y,
+					gridSetupNormal[i + 1][j].x, gridSetupNormal[i + 1][j].y);
+				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+				orderedPolygonCoordinates.clear();
+			}
+		}
 		break;
 
 	case 3:
@@ -1030,7 +1168,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 				orderedCoordinates(centreX, centreY, std::get<0>(P3), std::get<1>(P3), std::get<0>(P2), std::get<1>(P2));
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 								orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-								orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, color);
+								orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, color, calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 			}
 			break;
@@ -1061,7 +1199,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 									   gridSetupNormal[i][j + 1].x, gridSetupNormal[i][j + 1].y);
 					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 									orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
 					orderedPolygonCoordinates.clear();
 
 					orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
@@ -1069,7 +1207,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 									   gridSetupNormal[i + 1][j].x, gridSetupNormal[i + 1][j].y);
 					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 						orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-						orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+						orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
 					orderedPolygonCoordinates.clear();
 				}
 			}
@@ -1101,7 +1239,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 						               gridSetupRandom[i][j + 1].x, gridSetupRandom[i][j + 1].y);
 					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 									orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
 					orderedPolygonCoordinates.clear();
 
 					orderedCoordinates(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y,
@@ -1109,7 +1247,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 									   gridSetupRandom[i + 1][j].x, gridSetupRandom[i + 1][j].y);
 					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 									orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
 					orderedPolygonCoordinates.clear();
 				}
 			}
@@ -1132,7 +1270,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 								   xPanel + P3_x, yPanel + P3_y);
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 								orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-								orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+								orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 			}
 		}
@@ -1161,7 +1299,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 			orderedCoordinates(centreX, centreY, std::get<0>(P3), std::get<1>(P3), std::get<0>(P2), std::get<1>(P2));
 			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 				orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff);
+				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff, calculate_LineColor());
 			orderedPolygonCoordinates.clear();
 		}
 		break;
@@ -1192,7 +1330,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 					gridSetupNormal[i][j + 1].x, gridSetupNormal[i][j + 1].y);
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff);
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff, calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 
 				orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
@@ -1200,7 +1338,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 					gridSetupNormal[i + 1][j].x, gridSetupNormal[i + 1][j].y);
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff);
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff, calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 			}
 		}
@@ -1230,7 +1368,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 					gridSetupRandom[i][j + 1].x, gridSetupRandom[i][j + 1].y);
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 
 				orderedCoordinates(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y,
@@ -1238,7 +1376,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 					gridSetupRandom[i + 1][j].x, gridSetupRandom[i + 1][j].y);
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 			}
 		}
@@ -1261,7 +1399,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 				xPanel + P3_x, yPanel + P3_y);
 			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 				orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
 			orderedPolygonCoordinates.clear();
 		}
 	}

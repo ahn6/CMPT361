@@ -22,10 +22,10 @@ struct grid
 
 struct RGBColour
 {
-	unsigned int r;
-	unsigned int g;
-	unsigned int b;
-	unsigned int o;
+	int r;
+	int g;
+	int b;
+	int o;
 };
 class Client : public PageTurner
 {
@@ -154,7 +154,7 @@ private:
 	// This class helper function will create filled polygons
 	// based on the bresenham line drawing algorithm
 	//============================================================
-	void polygonRenderer(float x1, float y1, float x2, float y2, float x3, float y3, unsigned int color);
+	void polygonRenderer(float x1, float y1, float x2, float y2, float x3, float y3, unsigned int color1, unsigned int color2);
 
 	//============================================================
 	// Main interface to read the input simp file
