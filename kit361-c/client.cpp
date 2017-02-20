@@ -687,7 +687,7 @@ void Client::antialias_LineRenderer(int x1, int y1, int x2, int y2, unsigned int
 }
 
 //============================================================
-void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, float y3, unsigned int color1, unsigned int color2)
+void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, float y3, unsigned int color1, unsigned int color2, unsigned int color3)
 {
 	float m_x1y1_x3y3 = (y3 - y1) / (x3 - x1); // Highest P -> Smallest P
 	float m_x2y2_x3y3 = (y3 - y2) / (x3 - x2); // Middle P -> Smallest P
@@ -696,6 +696,11 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 
 	int xleft = x1; // Start from highest Y
 	int xright = x1; // Start from highest Y
+
+	// Blerping
+	RGBColour unpackedColour1 = unpackColour(color1);
+	RGBColour unpackedColour2 = unpackColour(color2);
+	RGBColour unpackedColour3 = unpackColour(color3);
 
 	// Based on the sorting of the coordinates
 	// there two possible ways to get a vertical line
@@ -715,8 +720,21 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 		// Slope: N/A & b-intercept: N/A
 		if (x1 > x3)
 		{
+			const float diffR_21 = unpackedColour2.r - unpackedColour1.r;
+			const float diffG_21 = unpackedColour2.g - unpackedColour1.g;
+			const float diffB_21 = unpackedColour2.b - unpackedColour1.b;
+
+			const float diffR_31 = unpackedColour3.r - unpackedColour1.r;
+			const float diffG_31 = unpackedColour3.g - unpackedColour1.g;
+			const float diffB_31 = unpackedColour3.b - unpackedColour1.b;
+
+			const float diffR_32 = unpackedColour3.r - unpackedColour2.r;
+			const float diffG_32 = unpackedColour3.g - unpackedColour2.g;
+			const float diffB_32 = unpackedColour3.b - unpackedColour2.b;
+
 			for (int y = y1; y >= y2; y--)
 			{
+
 				xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
 				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
 			}
@@ -871,9 +889,141 @@ bool Client::simpFileInterpreter(std::string currentLine)
 			i = 0;
 		}
 	}
+
+	// Suggested solution
+	// 1) Read points from simp file [DONE]
+	// 2) Do the necessary transformation [IN PROGRESS]
+	// 3) Now we have the points, we shall add depth shading for the polygon [IN PROGRESS]
+	// 4) depth shading will draw the polygon
+	// 
 	return true;
 }
 
+//============================================================
+// Unsure what this does so far
+void Client::depthShading(point P1, point P2, point P3, unsigned int nearColour, unsigned int farColour)
+{
+	if (P1.z <= 200 && P2.z <= 200 && P3.z <= 200)
+	{
+		// Let's unpack the near and far colours
+		RGBColour nearCol = unpackColour(nearColour);
+		RGBColour farCol = unpackColour(farColour);
+
+		// Let's determine the z adjustment to multiply onto the colours
+		float z1Adujustment = P1.z / 2;
+		z1Adujustment = 1 - (z1Adujustment / 100);
+		float z2Adujustment = P2.z / 2;
+		z2Adujustment = 1 - (z1Adujustment / 100);
+		float z3Adujustment = P3.z / 2;
+		z3Adujustment = 1 - (z1Adujustment / 100);
+
+		// Let's now multiple each zAdjustment onto the colours
+		RGBColour newP1;
+		RGBColour newP2;
+		RGBColour newP3;
+		// Point 1
+		newP1.r = std::round(nearCol.r * z1Adujustment);
+		newP1.g = std::round(nearCol.g * z1Adujustment);
+		newP1.b = std::round(nearCol.b * z1Adujustment);
+		// Point 2
+		newP2.r = std::round(nearCol.r * z2Adujustment);
+		newP2.g = std::round(nearCol.g * z2Adujustment);
+		newP2.b = std::round(nearCol.b * z2Adujustment);
+		// Point 3
+		newP3.r = std::round(nearCol.r * z3Adujustment);
+		newP3.g = std::round(nearCol.g * z3Adujustment);
+		newP3.b = std::round(nearCol.b * z3Adujustment);
+
+		unsigned int colour_1 = packColour(newP1);
+		unsigned int colour_2 = packColour(newP2);
+		unsigned int colour_3 = packColour(newP3);
+
+		polygonRenderer(P1.x, P1.y, P2.x, P2.y, P3.x, P3.y, colour_1, colour_2, colour_3);
+	}
+}
+
+//============================================================ 
+// Rotation function
+point Client::transformationRotate(int numberOfDegrees, point P, point Pc)
+{
+	iMatrix rotation;
+
+	// Let's set the rotational matrix to our specific degree
+	rotation.matrix[0][0] = cos((numberOfDegrees * M_PI) / 180);
+	rotation.matrix[1][0] = -sin((numberOfDegrees * M_PI) / 180);
+	rotation.matrix[2][0] = 0;
+	rotation.matrix[0][1] = sin((numberOfDegrees * M_PI) / 180);
+	rotation.matrix[1][1] = cos((numberOfDegrees * M_PI) / 180);
+	rotation.matrix[2][1] = 0;
+	rotation.matrix[0][2] = 0;
+	rotation.matrix[1][2] = 0;
+	rotation.matrix[2][2] = 1;
+
+	// Let's attempt to multiply the point onto the matrix
+	// RotationMatrix * Point
+
+	point newPoint;
+	float shouldBeOne = 1;
+	float newShouldBeOne = 0;
+
+	int xToRotate = P.x - Pc.x;
+	int yToRotate = P.y - Pc.y;
+
+	newPoint.x = std::round(rotation.matrix[0][0] * xToRotate + rotation.matrix[1][0] * yToRotate + rotation.matrix[2][0] * shouldBeOne);
+	newPoint.y = std::round(rotation.matrix[0][1] * xToRotate + rotation.matrix[1][1] * yToRotate + rotation.matrix[2][1] * shouldBeOne);
+	newShouldBeOne = std::round(rotation.matrix[0][2] * xToRotate + rotation.matrix[1][2] * yToRotate + rotation.matrix[2][2] * shouldBeOne);
+
+	newPoint.x += Pc.x;
+	newPoint.y += Pc.y;
+
+	return newPoint;
+}
+
+//============================================================
+// Translation function
+point Client::transformationTranslate(point P, point Pc)
+{
+	// TODO: Implement
+}
+
+//============================================================
+// Scale function
+point Client::transformationScale(int scaleBy, point P, point Pc)
+{
+	// TODO: Implement
+}
+
+//============================================================
+void Client::zBuffer(int cx, int cy, triangle triangleToDraw)
+{
+	const int zbuff = 200;
+
+	int degreeToRotate = rand() % 120;
+
+	point centrePoint;
+	centrePoint.x = cx;
+	centrePoint.y = cy;
+
+	// Transform all three points
+	point P1 = transformationRotate(degreeToRotate, triangleToDraw.P1, centrePoint);
+	point P2 = transformationRotate(degreeToRotate, triangleToDraw.P2, centrePoint);
+	point P3 = transformationRotate(degreeToRotate, triangleToDraw.P3, centrePoint);
+
+	// Store this all into a triangle struct
+	triangle drawThis;
+	drawThis.P1 = P1;
+	drawThis.P2 = P2;
+	drawThis.P3 = P3;
+
+	// Draw the newly transformed triangle
+	orderedCoordinates(drawThis.P1.x, drawThis.P1.y,
+					   drawThis.P2.x, drawThis.P2.y,
+					   drawThis.P3.x, drawThis.P3.y);
+	polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+	orderedPolygonCoordinates.clear();
+}
 //============================================================
 // All possible tests that are required by Assignment 2
 
@@ -883,14 +1033,17 @@ void Client::panelTests2(const int pageNumber)
 	int xRandom = 0;
 	int yRandom = 0;
 
+	std::tuple<int,int> panelCenter = calculate_PanelCentre(50, 50, 700, 700);
+	std::tuple<int, int> vertex1;
+	std::tuple<int, int> vertex2;
+	std::tuple<int, int> vertex3;
+	unsigned int colourCase3 = 0;
+
 	std::string fileName = "cube.simp";
 	switch (pageNumber) {
 
 	// Implementation of wireframe
 	case 1:
-		// TODO: Figure out why interpolation doesn't work on the grid lines
-		// Currently works for one line [hardcoded]
-		//lineDrawer_DDA(100, 100, 100, 500, colour_1, colour_2);
 		grid gridSetupRandom[10][10];
 		// This stores the related points for the grid
 		for (int i = 0; i <= 9; i++) {
@@ -974,10 +1127,47 @@ void Client::panelTests2(const int pageNumber)
 		break;
 
 	case 3:
-		simpFileOpener(fileName);
+		// Let's attempt to make 6 triangles
+
+		// Circle center is in the center of the panel
+		colourCase3 = (0xff << 24) + ((255 & 0xff) << 16) + ((255 & 0xff) << 8) + (255 & 0xff);
+		// To draw the first Triangle..
+		point vertex1;
+		point vertex2;
+		point vertex3;
+		// 1) Vertex 1
+		vertex1.x = std::get<0>(panelCenter);
+		vertex1.y = std::get<1>(panelCenter) - 275;
+		// 2) Vertex 2
+		vertex2.x = (275 * cos((30 * M_PI) / 180)) + std::get<0>(panelCenter);
+		vertex2.y = (275 * sin((30 * M_PI) / 180)) + std::get<1>(panelCenter);
+		// 3) Vertex 3
+		vertex3.x = (275 * cos((150 * M_PI) / 180)) + std::get<0>(panelCenter);
+		vertex3.y = (275 * sin((150 * M_PI) / 180)) + std::get<1>(panelCenter);
+
+		// Let's store this triangle
+		triangle caseThreeTriangle;
+		caseThreeTriangle.P1 = vertex1;
+		caseThreeTriangle.P2 = vertex2;
+		caseThreeTriangle.P3 = vertex3;
+
+		zBuffer(std::get<0>(panelCenter), std::get<1>(panelCenter), caseThreeTriangle);
+		for (int i = 0; i < 5; i++)
+		{
+			zBuffer(std::get<0>(panelCenter), std::get<1>(panelCenter), caseThreeTriangle);
+		}
+		//drawable->setPixel(std::get<0>(panelCenter), std::get<1>(panelCenter) - 275, colourCase3);
+		//drawable->setPixel(std::get<0>(vertex1), std::get<1>(vertex1), colourCase3);
+		//drawable->setPixel(std::get<0>(vertex2), std::get<1>(vertex2), colourCase3);
+		//drawable->setPixel(std::get<0>(vertex3), std::get<1>(vertex3), colourCase3);
+
+		//transformationRotate(90, std::get<0>(vertex1), std::get<1>(vertex1));
+		//transformationRotate(90, std::get<0>(vertex2), std::get<1>(vertex2));
+		//transformationRotate(90, std::get<0>(vertex3), std::get<1>(vertex3));
 		break;
 
 	case 4:
+		simpFileOpener(fileName);
 		break;
 
 	case 5:

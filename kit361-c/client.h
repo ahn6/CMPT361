@@ -27,6 +27,45 @@ struct RGBColour
 	int b;
 	int o;
 };
+
+// Identity matrix
+struct iMatrix
+{
+	float matrix[4][4];
+	iMatrix()
+	{
+		for (int i = 0; i<4; i++) 
+		{
+			for (int j = 0; j<4; j++) 
+			{
+				if (i == j)
+				{
+					matrix[i][j] = 1.0;
+				}
+				else
+				{
+					matrix[i][j] = 0.0;
+				}
+			}
+		}
+	}
+};
+
+// Point Storage
+struct point
+{
+	int x;
+	int y;
+	int z;
+};
+
+// Triangle point storage
+struct triangle
+{
+	point P1;
+	point P2;
+	point P3;
+};
 class Client : public PageTurner
 {
 public:
@@ -154,7 +193,27 @@ private:
 	// This class helper function will create filled polygons
 	// based on the bresenham line drawing algorithm
 	//============================================================
-	void polygonRenderer(float x1, float y1, float x2, float y2, float x3, float y3, unsigned int color1, unsigned int color2);
+	void polygonRenderer(float x1, float y1, float x2, float y2, float x3, float y3, unsigned int color1, unsigned int color2, unsigned int color3);
+
+	//============================================================
+	// This function will do the following..
+	// 1) Allocate an array of doubles to the size of the window
+	// 2) Set the entire array to 200
+	// 3) Compare a given z coordinate to the zBuffer array
+	// 4) if z < zBuffer then write pixel
+	void zBuffer(int cx, int cy, triangle triangleToDraw);
+
+	//============================================================
+	// Rotation function
+	point transformationRotate(int numberOfDegrees, point P, point Pc);
+
+	//============================================================
+	// Translation function
+	point transformationTranslate(point P, point Pc);
+
+	//============================================================
+	// Scale function
+	point transformationScale(int scaleBy, point P, point Pc);
 
 	//============================================================
 	// Main interface to read the input simp file
@@ -170,6 +229,10 @@ private:
 	// 
 	// Returns false if the key words are invalid
 	bool simpFileInterpreter(std::string currentLine);
+
+	//============================================================
+	// Unsure what this does so far
+	void depthShading(point P1, point P2, point P3, unsigned int nearColour, unsigned int farColour);
 
 	//============================================================
 	// Possible Tests for Assignment 2
