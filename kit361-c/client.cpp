@@ -855,10 +855,14 @@ bool Client::simpFileOpener(std::string fileName)
 		results.push_back(token);
 	}
 
+	// Let's clean up our vector
 	for (int i = 0; i < results.size(); i++)
 	{
 		simpFileInterpreter(results[i]);
 	}
+
+	transformationInterpreter();
+	return true;
 }
 
 //============================================================
@@ -870,32 +874,49 @@ bool Client::simpFileInterpreter(std::string currentLine)
 	{
 		return true;
 	}
+	
+	if (currentLine[0] == '{')
+	{
+		parsedSimpFile.push_back(currentLine);
+	}
+
+	// Let's remove any blank spaces
 	std::size_t pos = currentLine.find(" ");
 	std::size_t intialPos = 0;
+
+	// 1) Read points from simp file [DONE]
 	while (pos != std::string::npos)
 	{
 		results.push_back(currentLine.substr(intialPos, pos - intialPos));
 		intialPos = pos + 1;
 
 		pos = currentLine.find_first_of(" (),", intialPos);
+
+		if (pos == std::string::npos)
+		{
+			results.push_back(std::string(&currentLine.back()));
+		}
 	}
 
 	// Let's remove blanks
+	std::vector<std::string> filteredResults;
 	for (std::size_t i = 0; i < results.size(); i++)
 	{
 		if (results[i] == "")
 		{
-			results.erase(results.begin()+i);
-			i = 0;
+			// Do nothing
+		}
+		else
+		{
+			filteredResults.push_back(results[i]);
 		}
 	}
 
-	// Suggested solution
-	// 1) Read points from simp file [DONE]
-	// 2) Do the necessary transformation [IN PROGRESS]
-	// 3) Now we have the points, we shall add depth shading for the polygon [IN PROGRESS]
-	// 4) depth shading will draw the polygon
-	// 
+	for (int i = 0; i < filteredResults.size(); i++)
+	{
+		parsedSimpFile.push_back(filteredResults[i]);
+	}
+
 	return true;
 }
 
@@ -942,10 +963,359 @@ void Client::depthShading(point P1, point P2, point P3, unsigned int nearColour,
 	}
 }
 
+//============================================================
+bool Client::transformationInterpreter()
+{
+	// Let's now define our stack for our current matrix
+	// The necessary steps are 
+	// 1) Take the top matrix at the top
+	// 2) Transform that matrix and push that newly formed matrix on the top of the stack
+	// 3) Render when required
+	// 4) if } appears, we shall pop the top matrix
+
+	std::stack<iMatrix> stackOfMatrices;
+
+	// Automatically store an identity matrix in the stack
+	iMatrix identityMatrix;
+	stackOfMatrices.push(identityMatrix);
+
+	iMatrix currentMatrix;
+	// Let's iterate through our vector
+	for (int i = 0; i < parsedSimpFile.size(); i++)
+	{
+		// Safety: If there are blanks still we will skip these
+		if (parsedSimpFile[i] == " ")
+		{
+			// Do nothing
+		}
+		else if (parsedSimpFile[i] == "{")
+		{
+			stackOfMatrices.push(currentMatrix);
+			currentMatrix = stackOfMatrices.top();
+		}
+		else if (parsedSimpFile[i] == "}")
+		{
+			stackOfMatrices.pop();
+		}
+		else if (parsedSimpFile[i] == "scale")
+		{
+			currentMatrix = transformationScale(std::stod(parsedSimpFile[i + 1]),
+												std::stod(parsedSimpFile[i + 2]),
+												std::stod(parsedSimpFile[i + 3]), currentMatrix);
+		}
+		else if (parsedSimpFile[i] == "translate")
+		{
+			currentMatrix = transformationTranslate(std::stod(parsedSimpFile[i + 1]), 
+													std::stod(parsedSimpFile[i + 2]), 
+													std::stod(parsedSimpFile[i + 3]), currentMatrix);
+		}
+		else if (parsedSimpFile[i] == "rotate")
+		{
+			currentMatrix = transformationRotate(parsedSimpFile[i+1],
+												 std::stod(parsedSimpFile[i+2]), currentMatrix);
+		}
+		else if (parsedSimpFile[i] == "line")
+		{
+			//First point
+			point currentPoint_1;
+			currentPoint_1.x = std::round(std::stod(parsedSimpFile[i + 1]));
+			currentPoint_1.y = std::round(std::stod(parsedSimpFile[i + 2]));
+			currentPoint_1.z = std::round(std::stod(parsedSimpFile[i + 3]));
+			currentPoint_1.w = 1;
+			//Second point
+			point currentPoint_2;
+			currentPoint_2.x = std::round(std::stod(parsedSimpFile[i + 4]));
+			currentPoint_2.y = std::round(std::stod(parsedSimpFile[i + 5]));
+			currentPoint_2.z = std::round(std::stod(parsedSimpFile[i + 6]));
+			currentPoint_2.w = 1;
+
+			point newPoint_1 = transformationPoint(currentPoint_1, currentMatrix);
+			point newPoint_2 = transformationPoint(currentPoint_2, currentMatrix);
+
+			lineDrawer_DDA(newPoint_1.x, newPoint_1.y, newPoint_2.x, newPoint_2.y, calculate_LineColor(), calculate_LineColor());
+
+		}
+		else if (parsedSimpFile[i] == "polygon")
+		{
+			//First point
+			point currentPoint_1;
+			currentPoint_1.x = std::round(std::stod(parsedSimpFile[i + 1]));
+			currentPoint_1.y = std::round(std::stod(parsedSimpFile[i + 2]));
+			currentPoint_1.z = std::round(std::stod(parsedSimpFile[i + 3]));
+			currentPoint_1.w = 1;
+			//Second point
+			point currentPoint_2;
+			currentPoint_2.x = std::round(std::stod(parsedSimpFile[i + 4]));
+			currentPoint_2.y = std::round(std::stod(parsedSimpFile[i + 5]));
+			currentPoint_2.z = std::round(std::stod(parsedSimpFile[i + 6]));
+			currentPoint_2.w = 1;
+			//Third point
+			point currentPoint_3;
+			currentPoint_3.x = std::round(std::stod(parsedSimpFile[i + 7]));
+			currentPoint_3.y = std::round(std::stod(parsedSimpFile[i + 8]));
+			currentPoint_3.z = std::round(std::stod(parsedSimpFile[i + 9]));
+			currentPoint_3.w = 1;
+
+			point newPoint_1 = transformationPoint(currentPoint_1, currentMatrix);
+			point newPoint_2 = transformationPoint(currentPoint_2, currentMatrix);
+			point newPoint_3 = transformationPoint(currentPoint_3, currentMatrix);
+
+			triangle drawThis;
+			drawThis.P1 = newPoint_1;
+			drawThis.P2 = newPoint_2;
+			drawThis.P3 = newPoint_3;
+
+			// Draw the newly transformed triangle
+			orderedCoordinates(drawThis.P1.x, drawThis.P1.y,
+				drawThis.P2.x, drawThis.P2.y,
+				drawThis.P3.x, drawThis.P3.y);
+			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+				orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
+			orderedPolygonCoordinates.clear();
+			//polygonRenderer
+		}
+		else if (parsedSimpFile[i] == "wire")
+		{
+			//TODO
+		}
+		else if (parsedSimpFile[i] == "filled")
+		{
+			//polygonRenderer
+		}
+		else
+		{
+			// Do nothing.. the only things that go in here are coordinates
+		}
+
+	}
+	return true;
+}
+
+//============================================================
+point Client::transformationPoint(point pointToChange, iMatrix transformationMatrix)
+{
+	std::tuple<int, int> panelCenter = calculate_PanelCentre(50, 50, 700, 700);
+	point Pc;
+	Pc.x = std::get<0>(panelCenter);
+	Pc.y = std::get<1>(panelCenter);
+
+	point newPoint;
+	newPoint.z = 1;
+	newPoint.w = 1;
+	int xToChange = pointToChange.x - Pc.x;
+	int yToChange = pointToChange.y - Pc.y;
+	int zToChange = 1;
+	int shouldBeOne = 1;
+	int someW = 1;
+
+	newPoint.x = std::round(transformationMatrix.matrix[0][0] * xToChange + transformationMatrix.matrix[1][0] * yToChange + transformationMatrix.matrix[2][0] * zToChange + transformationMatrix.matrix[3][0] * shouldBeOne);
+	newPoint.y = std::round(transformationMatrix.matrix[0][1] * xToChange + transformationMatrix.matrix[1][1] * yToChange + transformationMatrix.matrix[2][1] * zToChange + transformationMatrix.matrix[3][0] * shouldBeOne);
+	newPoint.z = std::round(transformationMatrix.matrix[0][2] * xToChange + transformationMatrix.matrix[1][2] * yToChange + transformationMatrix.matrix[2][2] * zToChange + transformationMatrix.matrix[3][2] * shouldBeOne);
+	someW = std::round(transformationMatrix.matrix[0][3] * xToChange + transformationMatrix.matrix[1][3] * yToChange + transformationMatrix.matrix[2][3] * zToChange + transformationMatrix.matrix[3][3] * shouldBeOne);
+
+	newPoint.x += Pc.x;
+	newPoint.y += Pc.y;
+	
+	return newPoint;
+}
 //============================================================ 
 // Rotation function
-point Client::transformationRotate(int numberOfDegrees, point P, point Pc)
+iMatrix Client::transformationRotate(std::string axis, double numberOfDegrees, iMatrix currentMatrix)
 {
+	iMatrix rotation;
+
+	// Let's set the rotational matrix to our specific degree to the axis we want to rotate on
+	if (axis == "X")
+	{
+		rotation.matrix[0][0] = 1;
+		rotation.matrix[1][0] = 0;
+		rotation.matrix[2][0] = 0;
+		rotation.matrix[3][0] = 0;
+
+		rotation.matrix[0][1] = 0;
+		rotation.matrix[1][1] = cos((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[2][1] = -sin((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[3][1] = 0;
+
+		rotation.matrix[0][2] = 0;
+		rotation.matrix[1][2] = sin((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[2][2] = cos((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[3][2] = 0;
+
+		rotation.matrix[0][3] = 0;
+		rotation.matrix[1][3] = 0;
+		rotation.matrix[2][3] = 0;
+		rotation.matrix[3][3] = 1;
+	}
+	else if (axis == "Y")
+	{
+		rotation.matrix[0][0] = cos((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[1][0] = 0;
+		rotation.matrix[2][0] = sin((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[3][0] = 0;
+
+		rotation.matrix[0][1] = 0;
+		rotation.matrix[1][1] = 1;
+		rotation.matrix[2][1] = 0;
+		rotation.matrix[3][1] = 0;
+
+		rotation.matrix[0][2] = -sin((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[1][2] = 0;
+		rotation.matrix[2][2] = cos((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[3][2] = 0;
+
+		rotation.matrix[0][3] = 0;
+		rotation.matrix[1][3] = 0;
+		rotation.matrix[2][3] = 0;
+		rotation.matrix[3][3] = 1;
+	}
+	else
+	{
+		rotation.matrix[0][0] = cos((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[1][0] = -sin((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[2][0] = 0;
+		rotation.matrix[3][0] = 0;
+
+		rotation.matrix[0][1] = sin((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[1][1] = cos((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[2][1] = 0;
+		rotation.matrix[3][1] = 0;
+
+		rotation.matrix[0][2] = 0;
+		rotation.matrix[1][2] = 0;
+		rotation.matrix[2][2] = 1;
+		rotation.matrix[3][2] = 0;
+
+		rotation.matrix[0][3] = 0;
+		rotation.matrix[1][3] = 0;
+		rotation.matrix[2][3] = 0;
+		rotation.matrix[3][3] = 1;
+	}
+	// Let's multiply the 2 matrices out
+	// 4x4 times 4x4
+	return multiplyMatrices(rotation, currentMatrix);
+}
+
+//============================================================
+iMatrix Client::multiplyMatrices(iMatrix A, iMatrix B)
+{
+	iMatrix finalMatrix;
+	int temp = 0;
+	int a, b, c;
+	for (a = 0; a < 4; a++)
+	{
+		for (b = 0; b < 4; b++)
+		{
+			for (c = 0; c < 4; c++)
+			{
+				temp += A.matrix[b][c] * B.matrix[c][a];
+			}
+			finalMatrix.matrix[b][a] = temp;
+			temp = 0;
+		}
+	}
+	return finalMatrix;
+}
+
+//============================================================
+// Translation function
+iMatrix Client::transformationTranslate(double translateX, double translateY, double translateZ, iMatrix currentMatrix)
+{
+	iMatrix translate;
+
+	translate.matrix[0][0] = 1;
+	translate.matrix[1][0] = 0;
+	translate.matrix[2][0] = 0;
+	translate.matrix[3][0] = 0;
+
+	translate.matrix[0][1] = 0;
+	translate.matrix[1][1] = 1;
+	translate.matrix[2][1] = 0;
+	translate.matrix[3][1] = 0;
+
+	translate.matrix[0][2] = 0;
+	translate.matrix[1][2] = 0;
+	translate.matrix[2][2] = 1;
+	translate.matrix[3][2] = 0;
+
+	translate.matrix[0][3] = translateX;
+	translate.matrix[1][3] = translateY;
+	translate.matrix[2][3] = translateZ;
+	translate.matrix[3][3] = 1;
+
+
+	return multiplyMatrices(translate, currentMatrix);
+}
+
+//============================================================
+// Scale function
+iMatrix Client::transformationScale(double scaleX, double scaleY, double scaleZ, iMatrix currentMatrix)
+{
+	iMatrix scale;
+
+	scale.matrix[0][0] = scaleX;
+	scale.matrix[1][0] = 0;
+	scale.matrix[2][0] = 0;
+	scale.matrix[3][0] = 0;
+
+	scale.matrix[0][1] = 0;
+	scale.matrix[1][1] = scaleY;
+	scale.matrix[2][1] = 0;
+	scale.matrix[3][1] = 0;
+
+	scale.matrix[0][2] = 0;
+	scale.matrix[1][2] = 0;
+	scale.matrix[2][2] = scaleZ;
+	scale.matrix[3][2] = 0;
+
+	scale.matrix[0][3] = 0;
+	scale.matrix[1][3] = 0;
+	scale.matrix[2][3] = 0;
+	scale.matrix[3][3] = 1;
+
+
+	return multiplyMatrices(scale,currentMatrix);
+}
+
+//============================================================
+/*void Client::zBuffer(int cx, int cy, triangle triangleToDraw)
+{
+	//double zbuff[650][650] = { 0 };
+
+	//for (int i = 0; i < 650; i++)
+	//{
+	//	for (int j = 0; j < 650; j++)
+	//	{
+	//		zbuff[i][j] = 0;
+	//	}
+	//}
+	int degreeToRotate = rand() % 120;
+
+	point centrePoint;
+	centrePoint.x = cx;
+	centrePoint.y = cy;
+
+	// Transform all three points
+	point P1 = transformationRotate(degreeToRotate, triangleToDraw.P1, centrePoint);
+	point P2 = transformationRotate(degreeToRotate, triangleToDraw.P2, centrePoint);
+	point P3 = transformationRotate(degreeToRotate, triangleToDraw.P3, centrePoint);
+
+	// Store this all into a triangle struct
+	triangle drawThis;
+	drawThis.P1 = P1;
+	drawThis.P2 = P2;
+	drawThis.P3 = P3;
+
+	// Draw the newly transformed triangle
+	orderedCoordinates(drawThis.P1.x, drawThis.P1.y,
+					   drawThis.P2.x, drawThis.P2.y,
+					   drawThis.P3.x, drawThis.P3.y);
+	polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
+	orderedPolygonCoordinates.clear();
+
 	iMatrix rotation;
 
 	// Let's set the rotational matrix to our specific degree
@@ -977,53 +1347,8 @@ point Client::transformationRotate(int numberOfDegrees, point P, point Pc)
 	newPoint.y += Pc.y;
 
 	return newPoint;
-}
+}*/
 
-//============================================================
-// Translation function
-point Client::transformationTranslate(point P, point Pc)
-{
-	// TODO: Implement
-}
-
-//============================================================
-// Scale function
-point Client::transformationScale(int scaleBy, point P, point Pc)
-{
-	// TODO: Implement
-}
-
-//============================================================
-void Client::zBuffer(int cx, int cy, triangle triangleToDraw)
-{
-	const int zbuff = 200;
-
-	int degreeToRotate = rand() % 120;
-
-	point centrePoint;
-	centrePoint.x = cx;
-	centrePoint.y = cy;
-
-	// Transform all three points
-	point P1 = transformationRotate(degreeToRotate, triangleToDraw.P1, centrePoint);
-	point P2 = transformationRotate(degreeToRotate, triangleToDraw.P2, centrePoint);
-	point P3 = transformationRotate(degreeToRotate, triangleToDraw.P3, centrePoint);
-
-	// Store this all into a triangle struct
-	triangle drawThis;
-	drawThis.P1 = P1;
-	drawThis.P2 = P2;
-	drawThis.P3 = P3;
-
-	// Draw the newly transformed triangle
-	orderedCoordinates(drawThis.P1.x, drawThis.P1.y,
-					   drawThis.P2.x, drawThis.P2.y,
-					   drawThis.P3.x, drawThis.P3.y);
-	polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
-					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
-	orderedPolygonCoordinates.clear();
-}
 //============================================================
 // All possible tests that are required by Assignment 2
 
@@ -1067,7 +1392,7 @@ void Client::panelTests2(const int pageNumber)
 				// Generate two random colors
 				unsigned int colour_1 = calculate_LineColor();
 				unsigned int colour_2 = calculate_LineColor();
-
+				unsigned int colour_3 = calculate_LineColor();
 
 				// We still need to draw the end borders
 				// I will do conditional statements for corner points otherwise we crash cause of access of illegal point in the array
@@ -1112,7 +1437,7 @@ void Client::panelTests2(const int pageNumber)
 					gridSetupNormal[i][j + 1].x, gridSetupNormal[i][j + 1].y);
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 
 				orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
@@ -1120,7 +1445,7 @@ void Client::panelTests2(const int pageNumber)
 					gridSetupNormal[i + 1][j].x, gridSetupNormal[i + 1][j].y);
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 			}
 		}
@@ -1151,10 +1476,10 @@ void Client::panelTests2(const int pageNumber)
 		caseThreeTriangle.P2 = vertex2;
 		caseThreeTriangle.P3 = vertex3;
 
-		zBuffer(std::get<0>(panelCenter), std::get<1>(panelCenter), caseThreeTriangle);
+		//zBuffer(std::get<0>(panelCenter), std::get<1>(panelCenter), caseThreeTriangle);
 		for (int i = 0; i < 5; i++)
 		{
-			zBuffer(std::get<0>(panelCenter), std::get<1>(panelCenter), caseThreeTriangle);
+			//zBuffer(std::get<0>(panelCenter), std::get<1>(panelCenter), caseThreeTriangle);
 		}
 		//drawable->setPixel(std::get<0>(panelCenter), std::get<1>(panelCenter) - 275, colourCase3);
 		//drawable->setPixel(std::get<0>(vertex1), std::get<1>(vertex1), colourCase3);
@@ -1358,7 +1683,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 				orderedCoordinates(centreX, centreY, std::get<0>(P3), std::get<1>(P3), std::get<0>(P2), std::get<1>(P2));
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 								orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-								orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, color, calculate_LineColor());
+								orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, color, calculate_LineColor(), calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 			}
 			break;
@@ -1389,7 +1714,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 									   gridSetupNormal[i][j + 1].x, gridSetupNormal[i][j + 1].y);
 					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 									orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
 					orderedPolygonCoordinates.clear();
 
 					orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
@@ -1397,7 +1722,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 									   gridSetupNormal[i + 1][j].x, gridSetupNormal[i + 1][j].y);
 					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 						orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-						orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+						orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
 					orderedPolygonCoordinates.clear();
 				}
 			}
@@ -1429,7 +1754,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 						               gridSetupRandom[i][j + 1].x, gridSetupRandom[i][j + 1].y);
 					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 									orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
 					orderedPolygonCoordinates.clear();
 
 					orderedCoordinates(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y,
@@ -1437,7 +1762,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 									   gridSetupRandom[i + 1][j].x, gridSetupRandom[i + 1][j].y);
 					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 									orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+									orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
 					orderedPolygonCoordinates.clear();
 				}
 			}
@@ -1460,7 +1785,7 @@ void Client::filledPolygonsTest(int centreX, int centreY, Panel whichPanel) {
 								   xPanel + P3_x, yPanel + P3_y);
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 								orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-								orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+								orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 			}
 		}
@@ -1489,7 +1814,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 			orderedCoordinates(centreX, centreY, std::get<0>(P3), std::get<1>(P3), std::get<0>(P2), std::get<1>(P2));
 			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 				orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff, calculate_LineColor());
+				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff, calculate_LineColor(), calculate_LineColor());
 			orderedPolygonCoordinates.clear();
 		}
 		break;
@@ -1520,7 +1845,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 					gridSetupNormal[i][j + 1].x, gridSetupNormal[i][j + 1].y);
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff, calculate_LineColor());
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff, calculate_LineColor(), calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 
 				orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
@@ -1528,7 +1853,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 					gridSetupNormal[i + 1][j].x, gridSetupNormal[i + 1][j].y);
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff, calculate_LineColor());
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff, calculate_LineColor(), calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 			}
 		}
@@ -1558,7 +1883,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 					gridSetupRandom[i][j + 1].x, gridSetupRandom[i][j + 1].y);
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 
 				orderedCoordinates(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y,
@@ -1566,7 +1891,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 					gridSetupRandom[i + 1][j].x, gridSetupRandom[i + 1][j].y);
 				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
 				orderedPolygonCoordinates.clear();
 			}
 		}
@@ -1589,7 +1914,7 @@ void Client::alteredFilledPolygonsTest(int centreX, int centreY, Panel whichPane
 				xPanel + P3_x, yPanel + P3_y);
 			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 				orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor());
+				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
 			orderedPolygonCoordinates.clear();
 		}
 	}

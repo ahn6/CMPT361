@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <stack>
 
 typedef enum {ONE, TWO, THREE, FOUR} Panel;
 typedef enum {OctOne, OctTwo, OctThree, OctFour, OctFive, OctSix, OctSeven, OctEight} Octant;
@@ -57,6 +58,7 @@ struct point
 	int x;
 	int y;
 	int z;
+	int w;
 };
 
 // Triangle point storage
@@ -80,6 +82,9 @@ public:
 	// Returns (x,y) as the centre of the pixel
 	//============================================================
 	std::tuple<int, int> calculate_PanelCentre(int x1, int y1, int x2, int y2);
+
+	//============================================================
+	iMatrix multiplyMatrices(iMatrix A, iMatrix B);
 
 	//============================================================
 	// This will calculate the line endpoints for the starburst test
@@ -121,6 +126,8 @@ private:
 		int y = 0;
 	};
 	std::vector<polygonCoordinates> orderedPolygonCoordinates;
+	std::vector<std::string> parsedSimpFile;
+
     void draw_rect(int x1, int y1, int x2, int y2, unsigned int color);
 
 	//============================================================
@@ -201,19 +208,22 @@ private:
 	// 2) Set the entire array to 200
 	// 3) Compare a given z coordinate to the zBuffer array
 	// 4) if z < zBuffer then write pixel
-	void zBuffer(int cx, int cy, triangle triangleToDraw);
+	//void zBuffer(int cx, int cy, triangle triangleToDraw);
 
 	//============================================================
 	// Rotation function
-	point transformationRotate(int numberOfDegrees, point P, point Pc);
+	iMatrix transformationRotate(std::string axis, double numberOfDegrees, iMatrix currentMatrix);
 
 	//============================================================
 	// Translation function
-	point transformationTranslate(point P, point Pc);
+	iMatrix transformationTranslate(double translateX, double translateY, double translateZ, iMatrix currentMatrix);
 
 	//============================================================
 	// Scale function
-	point transformationScale(int scaleBy, point P, point Pc);
+	iMatrix transformationScale(double scaleX, double scaleY, double scaleZ, iMatrix currentMatrix);
+
+	//============================================================
+	point transformationPoint(point pointToChange, iMatrix transformationMatrix);
 
 	//============================================================
 	// Main interface to read the input simp file
@@ -229,6 +239,10 @@ private:
 	// 
 	// Returns false if the key words are invalid
 	bool simpFileInterpreter(std::string currentLine);
+
+	//============================================================
+	// Transform, and render the simp file
+	bool transformationInterpreter();
 
 	//============================================================
 	// Unsure what this does so far
