@@ -691,8 +691,10 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 {
 	float m_x1y1_x3y3 = (y3 - y1) / (x3 - x1); // Highest P -> Smallest P
 	float m_x2y2_x3y3 = (y3 - y2) / (x3 - x2); // Middle P -> Smallest P
+	float m_x1y1_x2y2 = (y2 - y1) / (x2 - x1);
 	float b_x1y1_x3y3 = y1 - m_x1y1_x3y3*(x1); // Slope for Lowest P -> Smallest P
 	float b_x2y2_x3y3 = y2 - m_x2y2_x3y3*(x2); // Slope for Middle P -> Smallest P
+	float b_x1y1_x2y2 = y1 - m_x1y1_x2y2*(x1);
 
 	int xleft = x1; // Start from highest Y
 	int xright = x1; // Start from highest Y
@@ -780,6 +782,41 @@ void Client::polygonRenderer(float x1, float y1, float x2, float y2, float x3, f
 				xleft = (y - b_x1y1_x3y3) / m_x1y1_x3y3;
 				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
 
+			}
+		}
+	}
+
+	else if (x1 - x3 == 0)
+	{
+		if (x1 < x2)
+		{
+			xleft = x1;
+			for (int y = y1; y >= y2; y--)
+			{
+				xright = (y - b_x1y1_x2y2) / m_x1y1_x2y2;
+				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
+			}
+
+			for (int y = y2; y >= y3; y--)
+			{
+				xright = (y - b_x2y2_x3y3) / m_x2y2_x3y3;
+				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
+			}
+		}
+
+		else
+		{
+			xright = x1;
+			for (int y = y1; y >= y2; y--)
+			{
+				xleft = (y - b_x1y1_x2y2) / m_x1y1_x2y2;
+				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
+			}
+
+			for (int y = y2; y >= y3; y--)
+			{
+				xleft = (y - b_x2y2_x3y3) / m_x2y2_x3y3;
+				lineDrawer_DDA(std::round(xleft), y, std::round(xright), y, color1, color2);
 			}
 		}
 	}
@@ -894,7 +931,7 @@ bool Client::simpFileInterpreter(std::string currentLine)
 
 		if (pos == std::string::npos)
 		{
-			results.push_back(std::string(&currentLine.back()));
+			results.push_back(currentLine.substr(intialPos, currentLine.size()));
 		}
 	}
 
@@ -977,7 +1014,6 @@ bool Client::transformationInterpreter()
 
 	// Automatically store an identity matrix in the stack
 	iMatrix identityMatrix;
-	stackOfMatrices.push(identityMatrix);
 
 	iMatrix currentMatrix;
 	// Let's iterate through our vector
@@ -1065,10 +1101,16 @@ bool Client::transformationInterpreter()
 			drawThis.P2 = newPoint_2;
 			drawThis.P3 = newPoint_3;
 
+
 			// Draw the newly transformed triangle
 			orderedCoordinates(drawThis.P1.x, drawThis.P1.y,
 				drawThis.P2.x, drawThis.P2.y,
 				drawThis.P3.x, drawThis.P3.y);
+
+			drawable->setPixel(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y, calculate_LineColor());
+			drawable->setPixel(orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y, calculate_LineColor());
+			drawable->setPixel(orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
+
 			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 				orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
 				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
@@ -1126,6 +1168,8 @@ iMatrix Client::transformationRotate(std::string axis, double numberOfDegrees, i
 	iMatrix rotation;
 
 	// Let's set the rotational matrix to our specific degree to the axis we want to rotate on
+	// TODO: Fix X Y rotation
+	// If it doesn't work then, just simply rotation on Z :3
 	if (axis == "X")
 	{
 		rotation.matrix[0][0] = 1;
@@ -1201,18 +1245,23 @@ iMatrix Client::transformationRotate(std::string axis, double numberOfDegrees, i
 iMatrix Client::multiplyMatrices(iMatrix A, iMatrix B)
 {
 	iMatrix finalMatrix;
-	int temp = 0;
-	int a, b, c;
-	for (a = 0; a < 4; a++)
+
+	for (int a = 0; a < 4; a++)
 	{
-		for (b = 0; b < 4; b++)
+		for (int b = 0; b < 4; b++)
 		{
-			for (c = 0; c < 4; c++)
+			finalMatrix.matrix[a][b] = 0;
+		}
+	}
+
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			for (int k = 0; k < 4; k++)
 			{
-				temp += A.matrix[b][c] * B.matrix[c][a];
+				finalMatrix.matrix[i][j] += A.matrix[i][k] * B.matrix[k][j];
 			}
-			finalMatrix.matrix[b][a] = temp;
-			temp = 0;
 		}
 	}
 	return finalMatrix;
