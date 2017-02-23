@@ -1159,6 +1159,25 @@ point Client::transformationPoint(point pointToChange, iMatrix transformationMat
 	newPoint.x += Pc.x;
 	newPoint.y += Pc.y;
 	
+	// Clip based on the window space
+	if (newPoint.x < 50)
+	{
+		newPoint.x = 50;
+	}
+	else  if (newPoint.x > 700)
+	{
+		newPoint.x = 700;
+	}
+
+	if (newPoint.y < 50)
+	{
+		newPoint.y = 50;
+	}
+	else if (newPoint.y > 700)
+	{
+		newPoint.y = 700;
+	}
+
 	return newPoint;
 }
 //============================================================ 
