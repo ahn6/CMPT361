@@ -1011,11 +1011,19 @@ bool Client::transformationInterpreter()
 	// 4) if } appears, we shall pop the top matrix
 
 	std::stack<iMatrix> stackOfMatrices;
-
-	// Automatically store an identity matrix in the stack
-	iMatrix identityMatrix;
-
 	iMatrix currentMatrix;
+
+	// This will convert the simpFile coordinates space into
+	// our screen space
+	// We have to scale by (650/200 = 3.25)
+	// We also have to translate by 325
+	// The following matrix is a mix of Scale & Translate
+	iMatrix worldCoords;
+	worldCoords.matrix[0][0] = 3.25;
+	worldCoords.matrix[1][1] = 3.25;
+	worldCoords.matrix[0][3] = 325;
+	worldCoords.matrix[1][3] = 325;
+
 	// Let's iterate through our vector
 	for (int i = 0; i < parsedSimpFile.size(); i++)
 	{
@@ -1092,24 +1100,25 @@ bool Client::transformationInterpreter()
 			currentPoint_3.z = std::round(std::stod(parsedSimpFile[i + 9]));
 			currentPoint_3.w = 1;
 
+			//Transform the point
 			point newPoint_1 = transformationPoint(currentPoint_1, currentMatrix);
 			point newPoint_2 = transformationPoint(currentPoint_2, currentMatrix);
 			point newPoint_3 = transformationPoint(currentPoint_3, currentMatrix);
 
+			point finalPoint_1 = transformationPoint(newPoint_1, worldCoords);
+			point finalPoint_2 = transformationPoint(newPoint_2, worldCoords);
+			point finalPoint_3 = transformationPoint(newPoint_3, worldCoords);
+
 			triangle drawThis;
-			drawThis.P1 = newPoint_1;
-			drawThis.P2 = newPoint_2;
-			drawThis.P3 = newPoint_3;
+			drawThis.P1 = finalPoint_1;
+			drawThis.P2 = finalPoint_2;
+			drawThis.P3 = finalPoint_3;
 
 
 			// Draw the newly transformed triangle
 			orderedCoordinates(drawThis.P1.x, drawThis.P1.y,
 				drawThis.P2.x, drawThis.P2.y,
 				drawThis.P3.x, drawThis.P3.y);
-
-			drawable->setPixel(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y, calculate_LineColor());
-			drawable->setPixel(orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y, calculate_LineColor());
-			drawable->setPixel(orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor());
 
 			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 				orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
@@ -1137,47 +1146,21 @@ bool Client::transformationInterpreter()
 //============================================================
 point Client::transformationPoint(point pointToChange, iMatrix transformationMatrix)
 {
-	std::tuple<int, int> panelCenter = calculate_PanelCentre(50, 50, 700, 700);
 	point Pc;
-	Pc.x = std::get<0>(panelCenter);
-	Pc.y = std::get<1>(panelCenter);
+	Pc.x = 325;
+	Pc.y = 325;
 
 	point newPoint;
 	newPoint.z = 1;
 	newPoint.w = 1;
-	int xToChange = pointToChange.x - Pc.x;
-	int yToChange = pointToChange.y - Pc.y;
 	int zToChange = 1;
 	int shouldBeOne = 1;
 	int someW = 1;
 
-	newPoint.x = std::round(transformationMatrix.matrix[0][0] * xToChange + transformationMatrix.matrix[1][0] * yToChange + transformationMatrix.matrix[2][0] * zToChange + transformationMatrix.matrix[3][0] * shouldBeOne);
-	newPoint.y = std::round(transformationMatrix.matrix[0][1] * xToChange + transformationMatrix.matrix[1][1] * yToChange + transformationMatrix.matrix[2][1] * zToChange + transformationMatrix.matrix[3][0] * shouldBeOne);
-	newPoint.z = std::round(transformationMatrix.matrix[0][2] * xToChange + transformationMatrix.matrix[1][2] * yToChange + transformationMatrix.matrix[2][2] * zToChange + transformationMatrix.matrix[3][2] * shouldBeOne);
-	someW = std::round(transformationMatrix.matrix[0][3] * xToChange + transformationMatrix.matrix[1][3] * yToChange + transformationMatrix.matrix[2][3] * zToChange + transformationMatrix.matrix[3][3] * shouldBeOne);
-
-	newPoint.x += Pc.x;
-	newPoint.y += Pc.y;
-	
-	// Clip based on the window space
-	if (newPoint.x < 50)
-	{
-		newPoint.x = 50;
-	}
-	else  if (newPoint.x > 700)
-	{
-		newPoint.x = 700;
-	}
-
-	if (newPoint.y < 50)
-	{
-		newPoint.y = 50;
-	}
-	else if (newPoint.y > 700)
-	{
-		newPoint.y = 700;
-	}
-
+	newPoint.x = std::round(transformationMatrix.matrix[0][0] * pointToChange.x + transformationMatrix.matrix[0][1] * pointToChange.y + transformationMatrix.matrix[0][2] * zToChange + transformationMatrix.matrix[0][3] * shouldBeOne);
+	newPoint.y = std::round(transformationMatrix.matrix[1][0] * pointToChange.x + transformationMatrix.matrix[1][1] * pointToChange.y + transformationMatrix.matrix[1][2] * zToChange + transformationMatrix.matrix[1][3] * shouldBeOne);
+	newPoint.z = std::round(transformationMatrix.matrix[2][0] * pointToChange.x + transformationMatrix.matrix[2][1] * pointToChange.y + transformationMatrix.matrix[2][2] * zToChange + transformationMatrix.matrix[2][3] * shouldBeOne);
+	someW = std::round(transformationMatrix.matrix[3][0] * pointToChange.x + transformationMatrix.matrix[3][1] * pointToChange.y + transformationMatrix.matrix[3][2] * zToChange + transformationMatrix.matrix[3][3] * shouldBeOne);
 	return newPoint;
 }
 //============================================================ 
@@ -1191,69 +1174,36 @@ iMatrix Client::transformationRotate(std::string axis, double numberOfDegrees, i
 	// If it doesn't work then, just simply rotation on Z :3
 	if (axis == "X")
 	{
-		rotation.matrix[0][0] = 1;
 		rotation.matrix[1][0] = 0;
-		rotation.matrix[2][0] = 0;
-		rotation.matrix[3][0] = 0;
-
-		rotation.matrix[0][1] = 0;
 		rotation.matrix[1][1] = cos((numberOfDegrees * M_PI) / 180);
-		rotation.matrix[2][1] = -sin((numberOfDegrees * M_PI) / 180);
-		rotation.matrix[3][1] = 0;
+		rotation.matrix[1][2] = -sin((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[1][3] = 0;
 
 		rotation.matrix[0][2] = 0;
 		rotation.matrix[1][2] = sin((numberOfDegrees * M_PI) / 180);
 		rotation.matrix[2][2] = cos((numberOfDegrees * M_PI) / 180);
 		rotation.matrix[3][2] = 0;
-
-		rotation.matrix[0][3] = 0;
-		rotation.matrix[1][3] = 0;
-		rotation.matrix[2][3] = 0;
-		rotation.matrix[3][3] = 1;
 	}
 	else if (axis == "Y")
 	{
-		rotation.matrix[0][0] = cos((numberOfDegrees * M_PI) / 180);
-		rotation.matrix[1][0] = 0;
-		rotation.matrix[2][0] = sin((numberOfDegrees * M_PI) / 180);
-		rotation.matrix[3][0] = 0;
+		rotation.matrix[0][1] = cos((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[0][2] = 0;
+		rotation.matrix[0][3] = sin((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[0][4] = 0;
 
-		rotation.matrix[0][1] = 0;
-		rotation.matrix[1][1] = 1;
+		rotation.matrix[2][0] = -sin((numberOfDegrees * M_PI) / 180);
 		rotation.matrix[2][1] = 0;
-		rotation.matrix[3][1] = 0;
-
-		rotation.matrix[0][2] = -sin((numberOfDegrees * M_PI) / 180);
-		rotation.matrix[1][2] = 0;
 		rotation.matrix[2][2] = cos((numberOfDegrees * M_PI) / 180);
-		rotation.matrix[3][2] = 0;
-
-		rotation.matrix[0][3] = 0;
-		rotation.matrix[1][3] = 0;
 		rotation.matrix[2][3] = 0;
-		rotation.matrix[3][3] = 1;
 	}
 	else
 	{
 		rotation.matrix[0][0] = cos((numberOfDegrees * M_PI) / 180);
-		rotation.matrix[1][0] = -sin((numberOfDegrees * M_PI) / 180);
-		rotation.matrix[2][0] = 0;
-		rotation.matrix[3][0] = 0;
+		rotation.matrix[0][1] = -sin((numberOfDegrees * M_PI) / 180);
 
-		rotation.matrix[0][1] = sin((numberOfDegrees * M_PI) / 180);
+		rotation.matrix[1][0] = sin((numberOfDegrees * M_PI) / 180);
 		rotation.matrix[1][1] = cos((numberOfDegrees * M_PI) / 180);
-		rotation.matrix[2][1] = 0;
-		rotation.matrix[3][1] = 0;
 
-		rotation.matrix[0][2] = 0;
-		rotation.matrix[1][2] = 0;
-		rotation.matrix[2][2] = 1;
-		rotation.matrix[3][2] = 0;
-
-		rotation.matrix[0][3] = 0;
-		rotation.matrix[1][3] = 0;
-		rotation.matrix[2][3] = 0;
-		rotation.matrix[3][3] = 1;
 	}
 	// Let's multiply the 2 matrices out
 	// 4x4 times 4x4
@@ -1292,26 +1242,10 @@ iMatrix Client::transformationTranslate(double translateX, double translateY, do
 {
 	iMatrix translate;
 
-	translate.matrix[0][0] = 1;
-	translate.matrix[1][0] = 0;
-	translate.matrix[2][0] = 0;
-	translate.matrix[3][0] = 0;
-
-	translate.matrix[0][1] = 0;
-	translate.matrix[1][1] = 1;
-	translate.matrix[2][1] = 0;
-	translate.matrix[3][1] = 0;
-
-	translate.matrix[0][2] = 0;
-	translate.matrix[1][2] = 0;
-	translate.matrix[2][2] = 1;
-	translate.matrix[3][2] = 0;
-
 	translate.matrix[0][3] = translateX;
 	translate.matrix[1][3] = translateY;
 	translate.matrix[2][3] = translateZ;
 	translate.matrix[3][3] = 1;
-
 
 	return multiplyMatrices(translate, currentMatrix);
 }
@@ -1323,26 +1257,8 @@ iMatrix Client::transformationScale(double scaleX, double scaleY, double scaleZ,
 	iMatrix scale;
 
 	scale.matrix[0][0] = scaleX;
-	scale.matrix[1][0] = 0;
-	scale.matrix[2][0] = 0;
-	scale.matrix[3][0] = 0;
-
-	scale.matrix[0][1] = 0;
 	scale.matrix[1][1] = scaleY;
-	scale.matrix[2][1] = 0;
-	scale.matrix[3][1] = 0;
-
-	scale.matrix[0][2] = 0;
-	scale.matrix[1][2] = 0;
 	scale.matrix[2][2] = scaleZ;
-	scale.matrix[3][2] = 0;
-
-	scale.matrix[0][3] = 0;
-	scale.matrix[1][3] = 0;
-	scale.matrix[2][3] = 0;
-	scale.matrix[3][3] = 1;
-
-
 	return multiplyMatrices(scale,currentMatrix);
 }
 
