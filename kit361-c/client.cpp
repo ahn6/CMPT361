@@ -24,7 +24,7 @@ void Client::nextPage() {
 	static int pageNumber = 0;
 	pageNumber++;
     std::cout << "PageNumber " << pageNumber << std::endl;
-    switch(pageNumber % 6) {
+    switch(pageNumber % 9) {
     case 1:
 		draw_rect(0, 0, 750, 750, 0xffffffff);
 		draw_rect( 50, 50, 700, 700, 0x00000000);
@@ -46,6 +46,21 @@ void Client::nextPage() {
 		drawable->updateScreen();
 		break;
 	case 5:
+		draw_rect(0, 0, 750, 750, 0xffffffff);
+		draw_rect(50, 50, 700, 700, 0x00000000);
+		drawable->updateScreen();
+		break;
+	case 6:
+		draw_rect(0, 0, 750, 750, 0xffffffff);
+		draw_rect(50, 50, 700, 700, 0x00000000);
+		drawable->updateScreen();
+		break;
+	case 7:
+		draw_rect(0, 0, 750, 750, 0xffffffff);
+		draw_rect(50, 50, 700, 700, 0x00000000);
+		drawable->updateScreen();
+		break;
+	case 8:
 		draw_rect(0, 0, 750, 750, 0xffffffff);
 		draw_rect(50, 50, 700, 700, 0x00000000);
 		drawable->updateScreen();
@@ -680,6 +695,15 @@ bool Client::simpFileInterpreter(std::string currentLine)
 		parsedSimpFile.push_back(currentLine);
 	}
 
+	if (currentLine == "filled")
+	{
+		parsedSimpFile.push_back(currentLine);
+	}
+	if (currentLine == "wire")
+	{
+		parsedSimpFile.push_back(currentLine);
+	}
+
 	// Let's remove any blank spaces
 	std::size_t pos = currentLine.find(" ");
 	std::size_t intialPos = 0;
@@ -787,6 +811,7 @@ bool Client::transformationInterpreter()
 	worldCoords.matrix[0][3] = 325;
 	worldCoords.matrix[1][3] = 325;
 
+	wire = true;
 	// Let's iterate through our vector
 	for (int i = 0; i < parsedSimpFile.size(); i++)
 	{
@@ -836,10 +861,50 @@ bool Client::transformationInterpreter()
 			currentPoint_2.z = std::round(std::stod(parsedSimpFile[i + 6]));
 			currentPoint_2.w = 1;
 
-			point newPoint_1 = transformationPoint(currentPoint_1, currentMatrix);
-			point newPoint_2 = transformationPoint(currentPoint_2, currentMatrix);
+			point finalPoint_1 = transformationPoint(currentPoint_1, currentMatrix);
+			point finalPoint_2 = transformationPoint(currentPoint_2, currentMatrix);
 
-			lineDrawer_DDA(newPoint_1.x, newPoint_1.y, newPoint_2.x, newPoint_2.y, calculate_LineColor(), calculate_LineColor());
+			if (finalPoint_1.x > 650)
+			{
+				finalPoint_1.x = 650;
+			}
+			else if (finalPoint_1.x < 50)
+			{
+				finalPoint_1.x = 50;
+			}
+			if (finalPoint_1.y > 650)
+			{
+				finalPoint_1.y = 650;
+			}
+			else if (finalPoint_1.y < 50)
+			{
+				finalPoint_1.y = 50;
+			}
+			// --
+			if (finalPoint_2.x > 650)
+			{
+				finalPoint_2.x = 650;
+			}
+			else if (finalPoint_2.x < 50)
+			{
+				finalPoint_2.x = 50;
+			}
+			if (finalPoint_2.y > 650)
+			{
+				finalPoint_2.y = 650;
+			}
+			else if (finalPoint_2.y < 50)
+			{
+				finalPoint_2.y = 50;
+			}
+			if ((finalPoint_1.z || finalPoint_2.z)> 200)
+			{
+				// Do nothing
+			}
+			else
+			{
+				lineDrawer_DDA(finalPoint_1.x, finalPoint_1.y, finalPoint_2.x, finalPoint_2.y, calculate_LineColor(), calculate_LineColor());
+			}
 
 		}
 		else if (parsedSimpFile[i] == "polygon")
@@ -863,39 +928,107 @@ bool Client::transformationInterpreter()
 			currentPoint_3.z = std::round(std::stod(parsedSimpFile[i + 9]));
 			currentPoint_3.w = 1;
 
-			//Transform the point
-			point newPoint_1 = transformationPoint(currentPoint_1, currentMatrix);
-			point newPoint_2 = transformationPoint(currentPoint_2, currentMatrix);
-			point newPoint_3 = transformationPoint(currentPoint_3, currentMatrix);
+			//multply the world CS with CurrentMatrix
+			iMatrix CTM = multiplyMatrices(worldCoords, currentMatrix);
 
-			point finalPoint_1 = transformationPoint(newPoint_1, worldCoords);
-			point finalPoint_2 = transformationPoint(newPoint_2, worldCoords);
-			point finalPoint_3 = transformationPoint(newPoint_3, worldCoords);
+			point finalPoint_1 = transformationPoint(currentPoint_1, CTM);
+			point finalPoint_2 = transformationPoint(currentPoint_2, CTM);
+			point finalPoint_3 = transformationPoint(currentPoint_3, CTM);
 
-			triangle drawThis;
-			drawThis.P1 = finalPoint_1;
-			drawThis.P2 = finalPoint_2;
-			drawThis.P3 = finalPoint_3;
+			if (finalPoint_1.x > 650)
+			{
+				finalPoint_1.x = 650;
+			}
+			else if (finalPoint_1.x < 50)
+			{
+				finalPoint_1.x = 50;
+			}
+			if (finalPoint_1.y > 650)
+			{
+				finalPoint_1.y = 650;
+			}
+			else if (finalPoint_1.y < 50)
+			{
+				finalPoint_1.y = 50;
+			}
+			// --
+			if (finalPoint_2.x > 650)
+			{
+				finalPoint_2.x = 650;
+			}
+			else if (finalPoint_2.x < 50)
+			{
+				finalPoint_2.x = 50;
+			}
+			if (finalPoint_2.y > 650)
+			{
+				finalPoint_2.y = 650;
+			}
+			else if (finalPoint_2.y < 50)
+			{
+				finalPoint_2.y = 50;
+			}
 
+			// --
+			if (finalPoint_3.x > 650)
+			{
+				finalPoint_3.x = 650;
+			}
+			else if (finalPoint_3.x < 50)
+			{
+				finalPoint_3.x = 50;
+			}
+			if (finalPoint_3.y > 650)
+			{
+				finalPoint_3.y = 650;
+			}
+			else if (finalPoint_3.y < 50)
+			{
+				finalPoint_3.y = 50;
+			}
 
-			// Draw the newly transformed triangle
-			orderedCoordinates(drawThis.P1.x, drawThis.P1.y,
-				drawThis.P2.x, drawThis.P2.y,
-				drawThis.P3.x, drawThis.P3.y);
+			// --
+			if ((finalPoint_1.z || finalPoint_2.z || finalPoint_3.z)> 200)
+			{
+				// Do nothing
+			}
+			else
+			{
+				triangle drawThis;
+				drawThis.P1 = finalPoint_1;
+				drawThis.P2 = finalPoint_2;
+				drawThis.P3 = finalPoint_3;
 
-			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
-				orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
-			orderedPolygonCoordinates.clear();
-			//polygonRenderer
+				// Draw the newly transformed triangle
+
+				orderedCoordinates(drawThis.P1.x, drawThis.P1.y,
+					drawThis.P2.x, drawThis.P2.y,
+					drawThis.P3.x, drawThis.P3.y);
+
+				if (!wire)
+				{
+					depthShading(drawThis.P1, drawThis.P2, drawThis.P3, 0xffffffff, 0x00000000);
+					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+						orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+						orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff, 0xffffffff, 0xffffffff);
+					orderedPolygonCoordinates.clear();
+				}
+				else
+				{
+					lineDrawer_DDA(drawThis.P1.x, drawThis.P1.y, drawThis.P2.x, drawThis.P2.y, 0xffffffff, 0xffffffff);
+					lineDrawer_DDA(drawThis.P1.x, drawThis.P1.y, drawThis.P3.x, drawThis.P3.y, 0xffffffff, 0xffffffff);
+					lineDrawer_DDA(drawThis.P2.x, drawThis.P2.y, drawThis.P3.x, drawThis.P3.y, 0xffffffff, 0xffffffff);
+				}
+			}
+
 		}
 		else if (parsedSimpFile[i] == "wire")
 		{
-			//TODO
+			wire = true;
 		}
 		else if (parsedSimpFile[i] == "filled")
 		{
-			//polygonRenderer
+			wire = false;
 		}
 		else
 		{
@@ -909,10 +1042,6 @@ bool Client::transformationInterpreter()
 //============================================================
 point Client::transformationPoint(point pointToChange, iMatrix transformationMatrix)
 {
-	point Pc;
-	Pc.x = 325;
-	Pc.y = 325;
-
 	point newPoint;
 	newPoint.z = 1;
 	newPoint.w = 1;
@@ -920,10 +1049,10 @@ point Client::transformationPoint(point pointToChange, iMatrix transformationMat
 	int shouldBeOne = 1;
 	int someW = 1;
 
-	newPoint.x = std::round(transformationMatrix.matrix[0][0] * pointToChange.x + transformationMatrix.matrix[0][1] * pointToChange.y + transformationMatrix.matrix[0][2] * zToChange + transformationMatrix.matrix[0][3] * shouldBeOne);
-	newPoint.y = std::round(transformationMatrix.matrix[1][0] * pointToChange.x + transformationMatrix.matrix[1][1] * pointToChange.y + transformationMatrix.matrix[1][2] * zToChange + transformationMatrix.matrix[1][3] * shouldBeOne);
-	newPoint.z = std::round(transformationMatrix.matrix[2][0] * pointToChange.x + transformationMatrix.matrix[2][1] * pointToChange.y + transformationMatrix.matrix[2][2] * zToChange + transformationMatrix.matrix[2][3] * shouldBeOne);
-	someW = std::round(transformationMatrix.matrix[3][0] * pointToChange.x + transformationMatrix.matrix[3][1] * pointToChange.y + transformationMatrix.matrix[3][2] * zToChange + transformationMatrix.matrix[3][3] * shouldBeOne);
+	newPoint.x = std::round(transformationMatrix.matrix[0][0] * pointToChange.x + transformationMatrix.matrix[0][1] * pointToChange.y + transformationMatrix.matrix[0][2] * pointToChange.z + transformationMatrix.matrix[0][3]);
+	newPoint.y = std::round(transformationMatrix.matrix[1][0] * pointToChange.x + transformationMatrix.matrix[1][1] * pointToChange.y + transformationMatrix.matrix[1][2] * pointToChange.z + transformationMatrix.matrix[1][3]);
+	newPoint.z = std::round(transformationMatrix.matrix[2][0] * pointToChange.x + transformationMatrix.matrix[2][1] * pointToChange.y + transformationMatrix.matrix[2][2] * pointToChange.z + transformationMatrix.matrix[2][3]);
+	
 	return newPoint;
 }
 //============================================================ 
@@ -970,7 +1099,7 @@ iMatrix Client::transformationRotate(std::string axis, double numberOfDegrees, i
 	}
 	// Let's multiply the 2 matrices out
 	// 4x4 times 4x4
-	return multiplyMatrices(rotation, currentMatrix);
+	return multiplyMatrices(currentMatrix, rotation);
 }
 
 //============================================================
@@ -1010,7 +1139,7 @@ iMatrix Client::transformationTranslate(double translateX, double translateY, do
 	translate.matrix[2][3] = translateZ;
 	translate.matrix[3][3] = 1;
 
-	return multiplyMatrices(translate, currentMatrix);
+	return multiplyMatrices(currentMatrix, translate);
 }
 
 //============================================================
@@ -1022,7 +1151,7 @@ iMatrix Client::transformationScale(double scaleX, double scaleY, double scaleZ,
 	scale.matrix[0][0] = scaleX;
 	scale.matrix[1][1] = scaleY;
 	scale.matrix[2][2] = scaleZ;
-	return multiplyMatrices(scale,currentMatrix);
+	return multiplyMatrices(currentMatrix, scale);
 }
 
 //============================================================
@@ -1039,7 +1168,7 @@ void Client::zBuffer(triangle caseThreeTriangle)
 	// The triangle given has a z value so
 	if (caseThreeTriangle.P1.z != 0)
 	{
-		for (int i = 0; i < 7; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			iMatrix rotationMatrix;
 			rotationMatrix = transformationRotate("Z", rand() % 120, rotationMatrix);
@@ -1057,9 +1186,49 @@ void Client::zBuffer(triangle caseThreeTriangle)
 				drawThis.P2.x, drawThis.P2.y,
 				drawThis.P3.x, drawThis.P3.y);
 
+			// Let's unpack the near and far colours
+			RGBColour colour = unpackColour(calculate_LineColor());
+			RGBColour newP1;
+			if (i == 0)
+			{
+				newP1.r = std::round(colour.r * 1);
+				newP1.g = std::round(colour.g * 1);
+				newP1.b = std::round(colour.b * 1);
+			}
+			else if (i == 1)
+			{
+				newP1.r = std::round(colour.r * 0.85);
+				newP1.g = std::round(colour.g * 0.85);
+				newP1.b = std::round(colour.b * 0.85);
+			}
+			else if (i == 2)
+			{
+				newP1.r = std::round(colour.r * 0.7);
+				newP1.g = std::round(colour.g * 0.7);
+				newP1.b = std::round(colour.b * 0.7);
+			}
+			else if (i == 3)
+			{
+				newP1.r = std::round(colour.r * 0.55);
+				newP1.g = std::round(colour.g * 0.55);
+				newP1.b = std::round(colour.b * 0.55);
+			}
+			else if (i == 4)
+			{
+				newP1.r = std::round(colour.r * 0.4);
+				newP1.g = std::round(colour.g * 0.4);
+				newP1.b = std::round(colour.b * 0.4);
+			}
+			else if (i == 5)
+			{
+				newP1.r = std::round(colour.r * 0.25);
+				newP1.g = std::round(colour.g * 0.25);
+				newP1.b = std::round(colour.b * 0.25);
+			}
+			unsigned int newColour = packColour(newP1);
 			polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
 				orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
+				orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, newColour, newColour, newColour);
 			orderedPolygonCoordinates.clear();
 		}
 	}
@@ -1222,14 +1391,27 @@ void Client::panelTests2(const int pageNumber)
 		break;
 
 	case 4:
-		simpFileOpener(fileName);
+		simpFileOpener("test.txt");
+		parsedSimpFile.clear();
 		break;
 
 	case 5:
+		simpFileOpener("mytest2.simp");
+		parsedSimpFile.clear();
 		break;
 
 	case 6:
-		// [OPTIONAL] TODO: Implement positive attributes of polygon or line rendering
+		simpFileOpener("test1.simp");
+		parsedSimpFile.clear();
+		break;
+
+	case 7:
+		simpFileOpener("test2.simp");
+		parsedSimpFile.clear();
+		break;
+
+	case 8:
+		simpFileOpener("test3.simp");
 		break;
 
 	default:
