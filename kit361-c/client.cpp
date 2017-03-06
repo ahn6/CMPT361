@@ -15,56 +15,22 @@ int maxYValue(int y1, int y2, int y3) {
 	return max;
 }
 
-Client::Client(Drawable *drawable)
+Client::Client(Drawable *drawable, char *fileName)
 {
     this->drawable = drawable;
+	this->simpFileName = std::string(fileName);
 }
 
 void Client::nextPage() {	
 	static int pageNumber = 0;
 	pageNumber++;
     std::cout << "PageNumber " << pageNumber << std::endl;
-    switch(pageNumber % 9) {
+    switch(pageNumber % 2) {
     case 1:
 		draw_rect(0, 0, 750, 750, 0xffffffff);
 		draw_rect( 50, 50, 700, 700, 0x00000000);
         drawable->updateScreen();   // you must call this to make the display change.
         break;
-    case 2:
-		draw_rect(0, 0, 750, 750, 0xffffffff);
-		draw_rect(50, 50, 700, 700, 0x00000000);
-		drawable->updateScreen();
-        break;
-    case 3:
-		draw_rect(0, 0, 750, 750, 0xffffffff);
-		draw_rect(50, 50, 700, 700, 0x00000000);
-		drawable->updateScreen();
-        break;
-    case 4:
-		draw_rect(0, 0, 750, 750, 0xffffffff);
-		draw_rect(50, 50, 700, 700, 0x00000000);
-		drawable->updateScreen();
-		break;
-	case 5:
-		draw_rect(0, 0, 750, 750, 0xffffffff);
-		draw_rect(50, 50, 700, 700, 0x00000000);
-		drawable->updateScreen();
-		break;
-	case 6:
-		draw_rect(0, 0, 750, 750, 0xffffffff);
-		draw_rect(50, 50, 700, 700, 0x00000000);
-		drawable->updateScreen();
-		break;
-	case 7:
-		draw_rect(0, 0, 750, 750, 0xffffffff);
-		draw_rect(50, 50, 700, 700, 0x00000000);
-		drawable->updateScreen();
-		break;
-	case 8:
-		draw_rect(0, 0, 750, 750, 0xffffffff);
-		draw_rect(50, 50, 700, 700, 0x00000000);
-		drawable->updateScreen();
-		break;
     default:
         draw_rect(0, 0, 750, 750, 0xffffffff);
         draw_rect(400, 400, 700, 700, 0xff00ff40);
@@ -74,7 +40,10 @@ void Client::nextPage() {
 	//panelTests1(pageNumber); // Test the specific functionality of each panel on the specific page;
 	
 	// Assignment 2
-	panelTests2(pageNumber);
+	//panelTests2(pageNumber);
+
+	// Assignment 3
+	panelTests3(pageNumber);
 
 	drawable->updateScreen();
 }
@@ -745,7 +714,6 @@ bool Client::simpFileInterpreter(std::string currentLine)
 }
 
 //============================================================
-// Unsure what this does so far
 void Client::depthShading(point P1, point P2, point P3, unsigned int nearColour, unsigned int farColour)
 {
 	if (P1.z <= 200 && P2.z <= 200 && P3.z <= 200)
@@ -1030,6 +998,22 @@ bool Client::transformationInterpreter()
 		{
 			wire = false;
 		}
+		else if (parsedSimpFile[i] == "obj")
+		{
+			objFileReader(parsedSimpFile[i + 1]);
+		}
+		else if (parsedSimpFile[i] == "camera")
+		{
+		}
+		else if (parsedSimpFile[i] == "ambient")
+		{
+		}
+		else if (parsedSimpFile[i] == "depth")
+		{
+		}
+		else if (parsedSimpFile[i] == "surface")
+		{
+		}
 		else
 		{
 			// Do nothing.. the only things that go in here are coordinates
@@ -1037,6 +1021,173 @@ bool Client::transformationInterpreter()
 
 	}
 	return true;
+}
+
+//============================================================
+bool Client::objFileReader(std::string fileName)
+{
+	std::ifstream file;
+	std::stringstream buffer;
+	file.open(fileName.c_str());
+	if (!file)
+	{
+		return false;
+	}
+	buffer << file.rdbuf();
+	std::string currentLine = buffer.str();
+
+	std::stringstream lineToTokenize(currentLine);
+	std::string token;
+	std::vector<std::string> results;
+	while (std::getline(lineToTokenize, token, '\n'))
+	{
+		results.push_back(token);
+	}
+
+	// We will now clean up our vector
+	for (int i = 0; i < results.size(); i++)
+	{
+		objFileInterpreter(results[i]);
+	}
+	transformObjFile();
+}
+
+//============================================================
+bool Client::objFileInterpreter(std::string currentLine)
+{
+	std::vector<std::string> results;
+	// Ignore comment lines
+	if (currentLine[0] == '#')
+	{
+		return true;
+	}
+
+	// Remove any blank spaces
+	std::size_t pos = currentLine.find(" ");
+	std::size_t intialPos = 0;
+
+	// Read the obj file
+	while (pos != std::string::npos)
+	{
+		results.push_back(currentLine.substr(intialPos, pos - intialPos));
+		intialPos = pos + 1;
+
+		pos = currentLine.find_first_of(" (),", intialPos);
+		if (pos == std::string::npos)
+		{
+			results.push_back(currentLine.substr(intialPos, currentLine.size()));
+		}
+
+		// Remove blank lines
+		std::vector<std::string> filteredResults;
+		for (std::size_t i = 0; i < results.size(); i++)
+		{
+			if (results[i] == "#")
+			{
+				// Do nothing
+			}
+			else if (results[i] == "")
+			{
+				// Do nothing
+			}
+			else
+			{
+				filteredResults.push_back(results[i]);
+			}
+		}
+
+		for (int i = 0; i < filteredResults.size(); i++)
+		{
+			parsedObjFile.push_back(filteredResults[i]);
+		}
+	}
+	return true;
+}
+
+//============================================================
+void Client::transformObjFile()
+{
+	Vertex tempVertex; // Temporary place holder for a read vertex 
+	Normal tempNormal; // Temporary place holder for a read Normal vertex
+	Face tempFace; // Temporary place holder for a read Face
+
+	// We know we want to store the vertex descriptions i.e
+	// Vertex 1: v 1 1 1 
+	// Vertex 2: v 0.5 0.05 0.5
+	// We store this so we can use it for the faces
+	// For Vectors
+	// [0] is the first vertex
+	// Where as in an obj file..
+	// 1 is the first vertex
+
+	// Let's iterate through our vector
+	for (int i = 0; i < parsedObjFile.size(); i++)
+	{
+		if (parsedObjFile[i] == " ")
+		{
+			// Do nothing. Safety measure.
+		}
+		else if (parsedObjFile[i] == "v")
+		{
+			// Case 1) X Y Z W R G B (i+8)
+			if ((parsedObjFile[i + 8] == "v") || (parsedObjFile[i + 8] == "vn") || (parsedObjFile[i + 8] == "f") || (parsedObjFile[i + 8] == "#"))
+			{
+				tempVertex.P.x = std::stod(parsedObjFile[i + 1]);
+				tempVertex.P.y = std::stod(parsedObjFile[i + 2]);
+				tempVertex.P.z = std::stod(parsedObjFile[i + 3]);
+				tempVertex.P.w = std::stod(parsedObjFile[i + 4]);
+				tempVertex.colour.r = std::stod(parsedObjFile[i + 5]);
+				tempVertex.colour.g = std::stod(parsedObjFile[i + 6]);
+				tempVertex.colour.b = std::stod(parsedObjFile[i + 7]);
+			}
+			else if ((parsedObjFile[i + 7] == "v") || (parsedObjFile[i + 7] == "vn") || (parsedObjFile[i + 7] == "f") || (parsedObjFile[i + 7] == "#"))
+			{
+				tempVertex.P.x = std::stod(parsedObjFile[i + 1]);
+				tempVertex.P.y = std::stod(parsedObjFile[i + 2]);
+				tempVertex.P.z = std::stod(parsedObjFile[i + 3]);
+				tempVertex.colour.r = std::stod(parsedObjFile[i + 4]);
+				tempVertex.colour.g = std::stod(parsedObjFile[i + 5]);
+				tempVertex.colour.b = std::stod(parsedObjFile[i + 6]);
+			}
+			else if ((parsedObjFile[i + 5] == "v") || (parsedObjFile[i + 5] == "vn") || (parsedObjFile[i + 5] == "f") || (parsedObjFile[i + 5] == "#"))
+			{
+				tempVertex.P.x = std::stod(parsedObjFile[i + 1]);
+				tempVertex.P.y = std::stod(parsedObjFile[i + 2]);
+				tempVertex.P.z = std::stod(parsedObjFile[i + 3]);
+				tempVertex.P.w = std::stod(parsedObjFile[i + 4]);
+				tempVertex.colour.r = 1;
+				tempVertex.colour.g = 1;
+				tempVertex.colour.b = 1;
+			}
+			else if ((parsedObjFile[i + 4] == "v") || (parsedObjFile[i + 4] == "vn") || (parsedObjFile[i + 4] == "f") || (parsedObjFile[i + 4] == "#"))
+			{
+				tempVertex.P.x = std::stod(parsedObjFile[i + 1]);
+				tempVertex.P.y = std::stod(parsedObjFile[i + 2]);
+				tempVertex.P.z = std::stod(parsedObjFile[i + 3]);
+				tempVertex.P.w = 1;
+				tempVertex.colour.r = 1;
+				tempVertex.colour.g = 1;
+				tempVertex.colour.b = 1;
+			}
+			objVertexArray.push_back(tempVertex);
+		}
+		else if (parsedObjFile[i] == "vn")
+		{
+			tempNormal.P.x = std::stod(parsedObjFile[i + 1]);
+			tempNormal.P.y = std::stod(parsedObjFile[i + 2]);
+			tempNormal.P.z = std::stod(parsedObjFile[i + 3]);
+			objNormalArray.push_back(tempNormal);
+		}
+		else if (parsedObjFile[i] == "f")
+		{
+			tempFace.vertex_1 = objVertexArray[std::stod(parsedObjFile[i + 1])];
+			tempFace.vertex_2 = objVertexArray[std::stod(parsedObjFile[i + 2])];
+			tempFace.vertex_3 = objVertexArray[std::stod(parsedObjFile[i + 3])];
+			objFaceArray.push_back(tempFace);
+		}
+
+		
+	}
 }
 
 //============================================================
@@ -1055,8 +1206,8 @@ point Client::transformationPoint(point pointToChange, iMatrix transformationMat
 	
 	return newPoint;
 }
+
 //============================================================ 
-// Rotation function
 iMatrix Client::transformationRotate(std::string axis, double numberOfDegrees, iMatrix currentMatrix)
 {
 	iMatrix rotation;
@@ -1153,6 +1304,9 @@ iMatrix Client::transformationScale(double scaleX, double scaleY, double scaleZ,
 	scale.matrix[2][2] = scaleZ;
 	return multiplyMatrices(currentMatrix, scale);
 }
+
+
+
 
 //============================================================
 void Client::zBuffer(triangle caseThreeTriangle)
@@ -1263,158 +1417,7 @@ point Client::page3TransformHelper(iMatrix transformationMatrix, point P)
 // All possible tests that are required by Assignment 2
 
 //============================================================
-void Client::panelTests2(const int pageNumber)
+void Client::panelTests3(const int pageNumber)
 {
-	int xRandom = 0;
-	int yRandom = 0;
-	int someZ = 0;
-	std::tuple<int,int> panelCenter = calculate_PanelCentre(50, 50, 700, 700);
-	std::tuple<int, int> vertex1;
-	std::tuple<int, int> vertex2;
-	std::tuple<int, int> vertex3;
-	unsigned int colourCase3 = 0;
-
-	std::string fileName = "cube.simp";
-	switch (pageNumber) {
-
-	// Implementation of wireframe
-	case 1:
-		grid gridSetupRandom[10][10];
-		// This stores the related points for the grid
-		for (int i = 0; i <= 9; i++) {
-			for (int j = 0; j <= 9; j++) {
-				gridSetupRandom[i][j].x = 100 + 60 * j;
-				gridSetupRandom[i][j].y = 100 + 60 * i;
-
-				xRandom = (rand() % 12) - 12;
-				yRandom = (rand() % 12) - 12;
-
-				gridSetupRandom[i][j].x = gridSetupRandom[i][j].x + xRandom;
-				gridSetupRandom[i][j].y = gridSetupRandom[i][j].y + yRandom;
-			}
-		}
-
-		// Let's draw the wireframe
-		for (int i = 0; i <= 9; i++) {
-			for (int j = 0; j <= 9; j++) {
-
-				// Generate two random colors
-				unsigned int colour_1 = calculate_LineColor();
-				unsigned int colour_2 = calculate_LineColor();
-				unsigned int colour_3 = calculate_LineColor();
-
-				// We still need to draw the end borders
-				// I will do conditional statements for corner points otherwise we crash cause of access of illegal point in the array
-				if (i<9) {
-					lineDrawer_DDA(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y, gridSetupRandom[i + 1][j].x, gridSetupRandom[i + 1][j].y, colour_1, colour_2);
-				}
-
-				if (j<9) {
-					lineDrawer_DDA(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y, gridSetupRandom[i][j + 1].x, gridSetupRandom[i][j + 1].y, colour_1, colour_2);
-				}
-
-				// This will draw the diagonal line
-				if (i != 0 && i <= 9 && j < 9) {
-					lineDrawer_DDA(gridSetupRandom[i][j].x, gridSetupRandom[i][j].y, gridSetupRandom[i - 1][j + 1].x, gridSetupRandom[i - 1][j + 1].y, colour_1, colour_2);
-				}
-			}
-		}
-		break;
-
-	case 2:
-		grid gridSetupNormal[10][10];
-		// This stores the related points for the grid
-		for (int i = 0; i <= 9; i++) {
-			for (int j = 0; j <= 9; j++) {
-				gridSetupNormal[i][j].x = 100 + 60 * j;
-				gridSetupNormal[i][j].y = 100 + 60 * i;
-
-				xRandom = (rand() % 12) - 12;
-				yRandom = (rand() % 12) - 12;
-
-				gridSetupNormal[i][j].x = gridSetupNormal[i][j].x + xRandom;
-				gridSetupNormal[i][j].y = gridSetupNormal[i][j].y + yRandom;
-			}
-		}
-
-		// Render Triangles
-		for (int i = 0; i < 9; i++) {
-			for (int j = 0; j < 9; j++) {
-				orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
-					gridSetupNormal[i + 1][j + 1].x, gridSetupNormal[i + 1][j + 1].y,
-					gridSetupNormal[i][j + 1].x, gridSetupNormal[i][j + 1].y);
-				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
-					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
-				orderedPolygonCoordinates.clear();
-
-				orderedCoordinates(gridSetupNormal[i][j].x, gridSetupNormal[i][j].y,
-					gridSetupNormal[i + 1][j + 1].x, gridSetupNormal[i + 1][j + 1].y,
-					gridSetupNormal[i + 1][j].x, gridSetupNormal[i + 1][j].y);
-				polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
-					orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-					orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, calculate_LineColor(), calculate_LineColor(), calculate_LineColor());
-				orderedPolygonCoordinates.clear();
-			}
-		}
-		break;
-
-	case 3:
-		// Let's attempt to make 6 triangles
-
-		// Circle center is in the center of the panel
-		colourCase3 = (0xff << 24) + ((255 & 0xff) << 16) + ((255 & 0xff) << 8) + (255 & 0xff);
-		// To draw the first Triangle..
-		point vertex1;
-		point vertex2;
-		point vertex3;
-		someZ = rand() % 200;
-		// 1) Vertex 1
-		vertex1.x = std::get<0>(panelCenter);
-		vertex1.y = std::get<1>(panelCenter) - 275;
-		vertex1.z = someZ;
-		// 2) Vertex 2
-		vertex2.x = (275 * cos((30 * M_PI) / 180)) + std::get<0>(panelCenter);
-		vertex2.y = (275 * sin((30 * M_PI) / 180)) + std::get<1>(panelCenter);
-		vertex2.z = someZ;
-		// 3) Vertex 3
-		vertex3.x = (275 * cos((150 * M_PI) / 180)) + std::get<0>(panelCenter);
-		vertex3.y = (275 * sin((150 * M_PI) / 180)) + std::get<1>(panelCenter);
-		vertex3.z = someZ;
-
-		// Let's store this triangle
-		triangle caseThreeTriangle;
-		caseThreeTriangle.P1 = vertex1;
-		caseThreeTriangle.P2 = vertex2;
-		caseThreeTriangle.P3 = vertex3;
-		zBuffer(caseThreeTriangle);
-		break;
-
-	case 4:
-		simpFileOpener("test.txt");
-		parsedSimpFile.clear();
-		break;
-
-	case 5:
-		simpFileOpener("mytest2.simp");
-		parsedSimpFile.clear();
-		break;
-
-	case 6:
-		simpFileOpener("test1.simp");
-		parsedSimpFile.clear();
-		break;
-
-	case 7:
-		simpFileOpener("test2.simp");
-		parsedSimpFile.clear();
-		break;
-
-	case 8:
-		simpFileOpener("test3.simp");
-		break;
-
-	default:
-		break;
-	}
+	simpFileOpener(simpFileName);
 }

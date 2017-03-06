@@ -61,6 +61,26 @@ struct point
 	int w;
 };
 
+// Storage of Vertex
+struct Vertex
+{
+	point P;
+	RGBColour colour;
+};
+
+// Storage of a normal vector
+struct Normal
+{
+	point P;
+};
+
+struct Face
+{
+	Vertex vertex_1;
+	Vertex vertex_2;
+	Vertex vertex_3;
+};
+
 // Triangle point storage
 struct triangle
 {
@@ -71,7 +91,7 @@ struct triangle
 class Client : public PageTurner
 {
 public:
-    Client(Drawable *drawable);
+    Client(Drawable *drawable, char *fileName);
     void nextPage();
 	// Class Helper Functions
 	
@@ -123,12 +143,23 @@ public:
 
 private:
     Drawable *drawable;
+	std::string simpFileName;
 	struct polygonCoordinates {
 		int x = 0;
 		int y = 0;
 	};
 	std::vector<polygonCoordinates> orderedPolygonCoordinates;
 	std::vector<std::string> parsedSimpFile;
+	std::vector<std::string> parsedObjFile;
+
+	// Stores (x,y,z,w) with a colour (r,g,b)
+	std::vector<Vertex> objVertexArray;
+	// Stores (nx,ny,nz)
+	std::vector<Normal> objNormalArray;
+
+	// Stores Faces which consist of 3 vertices
+	std::vector<Face> objFaceArray;
+
 	bool wire;
     void draw_rect(int x1, int y1, int x2, int y2, unsigned int color);
 
@@ -204,13 +235,23 @@ private:
 	// This is interpret the current line by splitting the line
 	// into parts
 	//
-	// 
 	// Returns false if the key words are invalid
 	bool simpFileInterpreter(std::string currentLine);
 
 	//============================================================
 	// Transform, and render the simp file
 	bool transformationInterpreter();
+
+	//============================================================
+	// Reads a obj file
+	bool objFileReader(std::string fileName);
+
+	//============================================================
+	// Parses through the obj file
+	bool objFileInterpreter(std::string currentLine);
+
+	//============================================================
+	void transformObjFile();
 
 	//============================================================
 	// Unsure what this does so far
@@ -225,7 +266,7 @@ private:
 
 	//============================================================
 	// Main interface to interact with the tests
-	void panelTests2(const int currentPage);
+	void panelTests3(const int currentPage);
 };
 
 
