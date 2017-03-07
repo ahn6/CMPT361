@@ -1078,28 +1078,29 @@ bool Client::objFileInterpreter(std::string currentLine)
 			results.push_back(currentLine.substr(intialPos, currentLine.size()));
 		}
 
-		// Remove blank lines
-		std::vector<std::string> filteredResults;
-		for (std::size_t i = 0; i < results.size(); i++)
-		{
-			if (results[i] == "#")
-			{
-				// Do nothing
-			}
-			else if (results[i] == "")
-			{
-				// Do nothing
-			}
-			else
-			{
-				filteredResults.push_back(results[i]);
-			}
-		}
+	}
 
-		for (int i = 0; i < filteredResults.size(); i++)
+	// Remove blank lines
+	std::vector<std::string> filteredResults;
+	for (std::size_t i = 0; i < results.size(); i++)
+	{
+		if (results[i] == "#")
 		{
-			parsedObjFile.push_back(filteredResults[i]);
+			// Do nothing
 		}
+		else if (results[i] == "")
+		{
+			// Do nothing
+		}
+		else
+		{
+			parsedObjFile.push_back(results[i]);
+		}
+	}
+
+	for (int i = 0; i < filteredResults.size(); i++)
+	{
+	parsedObjFile.push_back(filteredResults[i]);
 	}
 	return true;
 }
@@ -1123,6 +1124,11 @@ void Client::transformObjFile()
 	// Let's iterate through our vector
 	for (int i = 0; i < parsedObjFile.size(); i++)
 	{
+		// Lets always reset the colour to the highest intensity
+		tempVertex.colour.r = 255;
+		tempVertex.colour.g = 255;
+		tempVertex.colour.b = 255;
+
 		if (parsedObjFile[i] == " ")
 		{
 			// Do nothing. Safety measure.
@@ -1136,38 +1142,41 @@ void Client::transformObjFile()
 				tempVertex.P.y = std::stod(parsedObjFile[i + 2]);
 				tempVertex.P.z = std::stod(parsedObjFile[i + 3]);
 				tempVertex.P.w = std::stod(parsedObjFile[i + 4]);
-				tempVertex.colour.r = std::stod(parsedObjFile[i + 5]);
-				tempVertex.colour.g = std::stod(parsedObjFile[i + 6]);
-				tempVertex.colour.b = std::stod(parsedObjFile[i + 7]);
+				tempVertex.colour.r = std::round(tempVertex.colour.r * std::stod(parsedObjFile[i + 5]));
+				tempVertex.colour.g = std::round(tempVertex.colour.g * std::stod(parsedObjFile[i + 6]));
+				tempVertex.colour.b = std::round(tempVertex.colour.b * std::stod(parsedObjFile[i + 7]));
 			}
+			// Case 2) X Y Z R G B (i+7)
 			else if ((parsedObjFile[i + 7] == "v") || (parsedObjFile[i + 7] == "vn") || (parsedObjFile[i + 7] == "f") || (parsedObjFile[i + 7] == "#"))
 			{
 				tempVertex.P.x = std::stod(parsedObjFile[i + 1]);
 				tempVertex.P.y = std::stod(parsedObjFile[i + 2]);
 				tempVertex.P.z = std::stod(parsedObjFile[i + 3]);
-				tempVertex.colour.r = std::stod(parsedObjFile[i + 4]);
-				tempVertex.colour.g = std::stod(parsedObjFile[i + 5]);
-				tempVertex.colour.b = std::stod(parsedObjFile[i + 6]);
+				tempVertex.colour.r = std::round(tempVertex.colour.r * std::stod(parsedObjFile[i + 4]));
+				tempVertex.colour.g = std::round(tempVertex.colour.g * std::stod(parsedObjFile[i + 5]));
+				tempVertex.colour.b = std::round(tempVertex.colour.b * std::stod(parsedObjFile[i + 6]));
 			}
+			// Case 3) X Y Z W (i+5)
 			else if ((parsedObjFile[i + 5] == "v") || (parsedObjFile[i + 5] == "vn") || (parsedObjFile[i + 5] == "f") || (parsedObjFile[i + 5] == "#"))
 			{
 				tempVertex.P.x = std::stod(parsedObjFile[i + 1]);
 				tempVertex.P.y = std::stod(parsedObjFile[i + 2]);
 				tempVertex.P.z = std::stod(parsedObjFile[i + 3]);
 				tempVertex.P.w = std::stod(parsedObjFile[i + 4]);
-				tempVertex.colour.r = 1;
-				tempVertex.colour.g = 1;
-				tempVertex.colour.b = 1;
+				tempVertex.colour.r = 255;
+				tempVertex.colour.g = 255;
+				tempVertex.colour.b = 255;
 			}
+			// Case 4) X Y Z (i+4)
 			else if ((parsedObjFile[i + 4] == "v") || (parsedObjFile[i + 4] == "vn") || (parsedObjFile[i + 4] == "f") || (parsedObjFile[i + 4] == "#"))
 			{
 				tempVertex.P.x = std::stod(parsedObjFile[i + 1]);
 				tempVertex.P.y = std::stod(parsedObjFile[i + 2]);
 				tempVertex.P.z = std::stod(parsedObjFile[i + 3]);
 				tempVertex.P.w = 1;
-				tempVertex.colour.r = 1;
-				tempVertex.colour.g = 1;
-				tempVertex.colour.b = 1;
+				tempVertex.colour.r = 255;
+				tempVertex.colour.g = 255;
+				tempVertex.colour.b = 255;
 			}
 			objVertexArray.push_back(tempVertex);
 		}
@@ -1180,12 +1189,15 @@ void Client::transformObjFile()
 		}
 		else if (parsedObjFile[i] == "f")
 		{
-			tempFace.vertex_1 = objVertexArray[std::stod(parsedObjFile[i + 1])];
-			tempFace.vertex_2 = objVertexArray[std::stod(parsedObjFile[i + 2])];
-			tempFace.vertex_3 = objVertexArray[std::stod(parsedObjFile[i + 3])];
+			tempFace.vertex_1 = objVertexArray[std::stoi(parsedObjFile[i + 1]) - 1];
+			tempFace.vertex_2 = objVertexArray[std::stoi(parsedObjFile[i + 2]) - 1];
+			tempFace.vertex_3 = objVertexArray[std::stoi(parsedObjFile[i + 3]) - 1];
 			objFaceArray.push_back(tempFace);
 		}
-
+		else
+		{
+			// Do nothing
+		}
 		
 	}
 }
@@ -1414,7 +1426,7 @@ point Client::page3TransformHelper(iMatrix transformationMatrix, point P)
 }
 
 //============================================================
-// All possible tests that are required by Assignment 2
+// All possible tests that are required by Assignment 3
 
 //============================================================
 void Client::panelTests3(const int pageNumber)

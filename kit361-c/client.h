@@ -55,10 +55,10 @@ struct iMatrix
 // Point Storage
 struct point
 {
-	int x;
-	int y;
-	int z;
-	int w;
+	double x;
+	double y;
+	double z;
+	double w;
 };
 
 // Storage of Vertex
