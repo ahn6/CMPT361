@@ -251,7 +251,12 @@ private:
 	bool objFileInterpreter(std::string currentLine);
 
 	//============================================================
+	// Stores all the objFile vertices, vertex normals & faces
 	void transformObjFile();
+
+	//============================================================
+	// CameraPerspective
+	void CameraPerspective();
 
 	//============================================================
 	// Unsure what this does so far

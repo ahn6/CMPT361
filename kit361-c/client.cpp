@@ -1004,6 +1004,7 @@ bool Client::transformationInterpreter()
 		}
 		else if (parsedSimpFile[i] == "camera")
 		{
+
 		}
 		else if (parsedSimpFile[i] == "ambient")
 		{
@@ -1189,9 +1190,32 @@ void Client::transformObjFile()
 		}
 		else if (parsedObjFile[i] == "f")
 		{
-			tempFace.vertex_1 = objVertexArray[std::stoi(parsedObjFile[i + 1]) - 1];
-			tempFace.vertex_2 = objVertexArray[std::stoi(parsedObjFile[i + 2]) - 1];
-			tempFace.vertex_3 = objVertexArray[std::stoi(parsedObjFile[i + 3]) - 1];
+			// There is a chance that indices can be negative.. in that case
+			// We will use the most recent vertex
+			if (std::stoi(parsedObjFile[i + 1]) < 0)
+			{
+				tempFace.vertex_1 = objVertexArray[objVertexArray.size() - std::abs(std::stoi(parsedObjFile[i + 1]))];
+			}
+			else
+			{
+				tempFace.vertex_1 = objVertexArray[std::stoi(parsedObjFile[i + 1]) - 1];
+			}
+			if (std::stoi(parsedObjFile[i + 2]) < 0)
+			{
+				tempFace.vertex_2 = objVertexArray[objVertexArray.size() - std::abs(std::stoi(parsedObjFile[i + 2]))];
+			}
+			else
+			{
+				tempFace.vertex_2 = objVertexArray[std::stoi(parsedObjFile[i + 2]) - 1];
+			}
+			if (std::stoi(parsedObjFile[i + 3]) < 0)
+			{
+				tempFace.vertex_3 = objVertexArray[objVertexArray.size() - std::abs(std::stoi(parsedObjFile[i + 3]))];
+			}
+			else
+			{
+				tempFace.vertex_3 = objVertexArray[std::stoi(parsedObjFile[i + 3]) - 1];
+			}
 			objFaceArray.push_back(tempFace);
 		}
 		else
@@ -1317,7 +1341,12 @@ iMatrix Client::transformationScale(double scaleX, double scaleY, double scaleZ,
 	return multiplyMatrices(currentMatrix, scale);
 }
 
+//============================================================
+// Changing Camera Perspective
+void Client::CameraPerspective()
+{
 
+}
 
 
 //============================================================
