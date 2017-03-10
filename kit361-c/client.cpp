@@ -1004,10 +1004,19 @@ bool Client::transformationInterpreter()
 		}
 		else if (parsedSimpFile[i] == "camera")
 		{
-
+			float xlow = std::stod(parsedSimpFile[i + 1]);
+			float ylow = std::stod(parsedSimpFile[i + 2]);
+			float xhigh = std::stod(parsedSimpFile[i + 3]);
+			float yhigh = std::stod(parsedSimpFile[i + 4]);
+			currentMatrix = CameraPerspective(90, std::stod(parsedSimpFile[i + 5]), std::stod(parsedSimpFile[i + 6]), currentMatrix);
 		}
 		else if (parsedSimpFile[i] == "ambient")
 		{
+			RGBColour setAmb;
+			setAmb.r = std::stod(parsedSimpFile[i + 1]);
+			setAmb.g = std::stod(parsedSimpFile[i + 2]);
+			setAmb.b = std::stod(parsedSimpFile[i + 3]);
+			setAmbient(setAmb);
 		}
 		else if (parsedSimpFile[i] == "depth")
 		{
@@ -1343,11 +1352,28 @@ iMatrix Client::transformationScale(double scaleX, double scaleY, double scaleZ,
 
 //============================================================
 // Changing Camera Perspective
-void Client::CameraPerspective()
+iMatrix Client::CameraPerspective(float degrees, float zNear, float zFar, iMatrix CTM)
+{
+	iMatrix camera;
+	// Setting the perspective Matrix
+	// zNear = hither
+	// zFar = yon
+	float s = 1 / (tan(degrees * (1 / 2) * M_PI / 180));
+	camera.matrix[0][0] = s;
+	camera.matrix[1][1] = s;
+	camera.matrix[2][2] = -zFar / (zFar - zNear);
+	camera.matrix[3][2] = -zFar * zNear / (zFar - zNear);
+	camera.matrix[2][3] = -1;
+	camera.matrix[3][3] = 0;
+
+	return multiplyMatrices(CTM, camera);
+}
+
+//============================================================
+void Client::setAmbient(RGBColour setAmbientColour)
 {
 
 }
-
 
 //============================================================
 void Client::zBuffer(triangle caseThreeTriangle)

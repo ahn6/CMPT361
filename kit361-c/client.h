@@ -256,7 +256,11 @@ private:
 
 	//============================================================
 	// CameraPerspective
-	void CameraPerspective();
+	iMatrix CameraPerspective(float degrees, float zNear, float zFar, iMatrix CTM);
+
+	//============================================================
+	// Making an ambient lighting
+	void setAmbient(RGBColour setAmbientColour);
 
 	//============================================================
 	// Unsure what this does so far
