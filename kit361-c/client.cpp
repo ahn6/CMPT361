@@ -1,4 +1,5 @@
 #include "client.h"
+#include <algorithm>
 # define M_PI           3.14159265358979323846  /* pi */
 double zbuff[650][650];
 
@@ -29,6 +30,7 @@ void Client::nextPage() {
     case 1:
 		draw_rect(0, 0, 750, 750, 0xffffffff);
 		draw_rect( 50, 50, 700, 700, 0x00000000);
+		panelTests3(pageNumber);
         drawable->updateScreen();   // you must call this to make the display change.
         break;
     default:
@@ -43,9 +45,6 @@ void Client::nextPage() {
 	//panelTests2(pageNumber);
 
 	// Assignment 3
-	panelTests3(pageNumber);
-
-	drawable->updateScreen();
 }
 
 void Client::draw_rect(int x1, int y1, int x2, int y2, unsigned int color) {
@@ -201,6 +200,15 @@ void Client::orderedCoordinates(int x1, int y1, int x2, int y2, int x3, int y3) 
 			orderedPolygonCoordinates.push_back(storageOfCoordinates);
 		}
 	}
+}
+
+//============================================================
+unsigned int Client::Lerp(unsigned int a, unsigned int b, double t)
+{
+	RGBColour unpackedColour1 = unpackColour(a);
+	RGBColour unpackedColour2 = unpackColour(b);
+	unsigned int temp;
+	return temp;
 }
 
 //============================================================
@@ -643,6 +651,7 @@ bool Client::simpFileOpener(std::string fileName)
 	for (int i = 0; i < results.size(); i++)
 	{
 		simpFileInterpreter(results[i]);
+
 	}
 
 	transformationInterpreter();
@@ -654,6 +663,13 @@ bool Client::simpFileInterpreter(std::string currentLine)
 {
 	std::vector<std::string> results;
 	// Let's ignore comment lines
+	currentLine.erase(std::remove(currentLine.begin(), currentLine.end(), '\t'), currentLine.end());
+
+	if (!firstSimp)
+	{
+		currentIndex = newFileIndex;
+		firstSimp = true;
+	}
 	if (currentLine[0] == '#')
 	{
 		return true;
@@ -661,16 +677,25 @@ bool Client::simpFileInterpreter(std::string currentLine)
 	
 	if (currentLine[0] == '{')
 	{
-		parsedSimpFile.push_back(currentLine);
+		parsedSimpFile.insert(parsedSimpFile.begin() + currentIndex, currentLine);
+		currentIndex++;
+	}
+
+	if (currentLine[0] == '}')
+	{
+		parsedSimpFile.insert(parsedSimpFile.begin() + currentIndex, currentLine);
+		currentIndex++;
 	}
 
 	if (currentLine == "filled")
 	{
-		parsedSimpFile.push_back(currentLine);
+		parsedSimpFile.insert(parsedSimpFile.begin() + currentIndex, currentLine);
+		currentIndex++;
 	}
 	if (currentLine == "wire")
 	{
-		parsedSimpFile.push_back(currentLine);
+		parsedSimpFile.insert(parsedSimpFile.begin() + currentIndex, currentLine);
+		currentIndex++;
 	}
 
 	// Let's remove any blank spaces
@@ -707,51 +732,63 @@ bool Client::simpFileInterpreter(std::string currentLine)
 
 	for (int i = 0; i < filteredResults.size(); i++)
 	{
-		parsedSimpFile.push_back(filteredResults[i]);
+		parsedSimpFile.insert(parsedSimpFile.begin() + currentIndex, filteredResults[i]);
+		currentIndex++;
 	}
 
 	return true;
 }
 
 //============================================================
-void Client::depthShading(point P1, point P2, point P3, unsigned int nearColour, unsigned int farColour)
+void Client::depthShading(Vertex P1, Vertex P2, Vertex P3, float near, float far, bool setAmb, RGB ambientColour)
 {
-	if (P1.z <= 200 && P2.z <= 200 && P3.z <= 200)
-	{
 		// Let's unpack the near and far colours
-		RGBColour nearCol = unpackColour(nearColour);
-		RGBColour farCol = unpackColour(farColour);
 
-		// Let's determine the z adjustment to multiply onto the colours
-		float z1Adujustment = P1.z / 2;
-		z1Adujustment = 1 - (z1Adujustment / 100);
-		float z2Adujustment = P2.z / 2;
-		z2Adujustment = 1 - (z1Adujustment / 100);
-		float z3Adujustment = P3.z / 2;
-		z3Adujustment = 1 - (z1Adujustment / 100);
-
+	if (P1.P.z <= 200 && P1.P.z >= 0 && P2.P.z <= 200 && P2.P.z >= 0 && P3.P.z <= 200 && P3.P.z >= 0)
+	{
 		// Let's now multiple each zAdjustment onto the colours
 		RGBColour newP1;
 		RGBColour newP2;
 		RGBColour newP3;
-		// Point 1
-		newP1.r = std::round(nearCol.r * z1Adujustment);
-		newP1.g = std::round(nearCol.g * z1Adujustment);
-		newP1.b = std::round(nearCol.b * z1Adujustment);
-		// Point 2
-		newP2.r = std::round(nearCol.r * z2Adujustment);
-		newP2.g = std::round(nearCol.g * z2Adujustment);
-		newP2.b = std::round(nearCol.b * z2Adujustment);
-		// Point 3
-		newP3.r = std::round(nearCol.r * z3Adujustment);
-		newP3.g = std::round(nearCol.g * z3Adujustment);
-		newP3.b = std::round(nearCol.b * z3Adujustment);
+		if (setAmb)
+		{
+			// Point 1
+			newP1.r = std::round(P1.colour.r * ambientColour.r * 255);
+			newP1.g = std::round(P1.colour.g * ambientColour.g * 255);
+			newP1.b = std::round(P1.colour.b * ambientColour.b * 255);
+			// Point 2
+			newP2.r = std::round(P2.colour.r * ambientColour.r * 255);
+			newP2.g = std::round(P2.colour.g * ambientColour.g * 255);
+			newP2.b = std::round(P2.colour.b * ambientColour.b * 255);
+			// Point 3
+			newP3.r = std::round(P3.colour.r * ambientColour.r * 255);
+			newP3.g = std::round(P3.colour.g * ambientColour.g * 255);
+			newP3.b = std::round(P3.colour.b * ambientColour.b * 255);
+		}
+		else
+		{
+			newP1.r = std::round(P1.colour.r * 255);
+			newP1.g = std::round(P1.colour.g * 255);
+			newP1.b = std::round(P1.colour.b * 255);
+			// Point 2
+			newP2.r = std::round(P2.colour.r * 255);
+			newP2.g = std::round(P2.colour.g * 255);
+			newP2.b = std::round(P2.colour.b * 255);
+			// Point 3
+			newP3.r = std::round(P3.colour.r * 255);
+			newP3.g = std::round(P3.colour.g * 255);
+			newP3.b = std::round(P3.colour.b * 255);
+		}
 
 		unsigned int colour_1 = packColour(newP1);
 		unsigned int colour_2 = packColour(newP2);
 		unsigned int colour_3 = packColour(newP3);
 
-		polygonRenderer(P1.x, P1.y, P2.x, P2.y, P3.x, P3.y, colour_1, colour_2, colour_3);
+		orderedCoordinates(P1.P.x, P1.P.y, P2.P.x, P2.P.y, P3.P.x, P3.P.y);
+		polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
+			orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
+			orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, colour_1, colour_2, colour_3);
+		orderedPolygonCoordinates.clear();
 	}
 }
 
@@ -767,7 +804,12 @@ bool Client::transformationInterpreter()
 
 	std::stack<iMatrix> stackOfMatrices;
 	iMatrix currentMatrix;
+	RGB setAmb;
+	RGBColour setAmbConverted;
 
+	RGB SurfaceColour;
+
+	bool setAmbCheck = false;
 	// This will convert the simpFile coordinates space into
 	// our screen space
 	// We have to scale by (650/200 = 3.25)
@@ -780,8 +822,15 @@ bool Client::transformationInterpreter()
 	worldCoords.matrix[1][3] = 325;
 
 	wire = true;
+	bool surfaceColour = false;
+	int i = 0;
+
+	if (!firstSimp)
+	{
+		i = newFileIndex;
+	}
 	// Let's iterate through our vector
-	for (int i = 0; i < parsedSimpFile.size(); i++)
+	for (; i < parsedSimpFile.size(); i++)
 	{
 		// Safety: If there are blanks still we will skip these
 		if (parsedSimpFile[i] == " ")
@@ -795,7 +844,27 @@ bool Client::transformationInterpreter()
 		}
 		else if (parsedSimpFile[i] == "}")
 		{
-			stackOfMatrices.pop();
+			if (!stackOfMatrices.empty())
+			{
+				stackOfMatrices.pop();
+			}
+		}
+		else if (parsedSimpFile[i] == "file")
+		{
+			if (parsedSimpFile[i+1].front() == '"')
+			{
+				firstSimp = false;
+				std::string fileName = parsedSimpFile[i + 1];
+				fileName.erase(0, 1);
+				fileName.erase(fileName.size() - 1);
+				fileName = fileName + ".simp";
+				newFileIndex = i;
+				parsedSimpFile.erase(parsedSimpFile.begin() + i + 1);
+				parsedSimpFile.erase(parsedSimpFile.begin() + i);
+				currentIndex = currentIndex - 2;
+				simpFileOpener(fileName);
+			}
+
 		}
 		else if (parsedSimpFile[i] == "scale")
 		{
@@ -816,21 +885,14 @@ bool Client::transformationInterpreter()
 		}
 		else if (parsedSimpFile[i] == "line")
 		{
-			//First point
-			point currentPoint_1;
-			currentPoint_1.x = std::round(std::stod(parsedSimpFile[i + 1]));
-			currentPoint_1.y = std::round(std::stod(parsedSimpFile[i + 2]));
-			currentPoint_1.z = std::round(std::stod(parsedSimpFile[i + 3]));
-			currentPoint_1.w = 1;
-			//Second point
-			point currentPoint_2;
-			currentPoint_2.x = std::round(std::stod(parsedSimpFile[i + 4]));
-			currentPoint_2.y = std::round(std::stod(parsedSimpFile[i + 5]));
-			currentPoint_2.z = std::round(std::stod(parsedSimpFile[i + 6]));
-			currentPoint_2.w = 1;
 
-			point finalPoint_1 = transformationPoint(currentPoint_1, currentMatrix);
-			point finalPoint_2 = transformationPoint(currentPoint_2, currentMatrix);
+			Vertex v1 = std::get<0>(setLinePoints(i));
+			Vertex v2 = std::get<1>(setLinePoints(i));
+
+			point finalPoint_1 = transformationPoint(v1.P, currentMatrix);
+			//unsigned int v1Colour = packColour(v1.colour);
+			//unsigned int v2Colour = packColour(v2.colour);
+			point finalPoint_2 = transformationPoint(v2.P, currentMatrix);
 
 			if (finalPoint_1.x > 650)
 			{
@@ -871,37 +933,33 @@ bool Client::transformationInterpreter()
 			}
 			else
 			{
-				lineDrawer_DDA(finalPoint_1.x, finalPoint_1.y, finalPoint_2.x, finalPoint_2.y, calculate_LineColor(), calculate_LineColor());
+				/*if (v1.colour.hasColour)
+				{
+					lineDrawer_DDA(finalPoint_1.x, finalPoint_1.y, finalPoint_2.x, finalPoint_2.y, v1Colour, v2Colour);
+				}
+				else
+				{*/
+					lineDrawer_DDA(finalPoint_1.x, finalPoint_1.y, finalPoint_2.x, finalPoint_2.y, 0xffffffff, 0xffffffff);
+				//}
 			}
 
 		}
 		else if (parsedSimpFile[i] == "polygon")
 		{
-			//First point
-			point currentPoint_1;
-			currentPoint_1.x = std::round(std::stod(parsedSimpFile[i + 1]));
-			currentPoint_1.y = std::round(std::stod(parsedSimpFile[i + 2]));
-			currentPoint_1.z = std::round(std::stod(parsedSimpFile[i + 3]));
-			currentPoint_1.w = 1;
-			//Second point
-			point currentPoint_2;
-			currentPoint_2.x = std::round(std::stod(parsedSimpFile[i + 4]));
-			currentPoint_2.y = std::round(std::stod(parsedSimpFile[i + 5]));
-			currentPoint_2.z = std::round(std::stod(parsedSimpFile[i + 6]));
-			currentPoint_2.w = 1;
-			//Third point
-			point currentPoint_3;
-			currentPoint_3.x = std::round(std::stod(parsedSimpFile[i + 7]));
-			currentPoint_3.y = std::round(std::stod(parsedSimpFile[i + 8]));
-			currentPoint_3.z = std::round(std::stod(parsedSimpFile[i + 9]));
-			currentPoint_3.w = 1;
+			Vertex v1 = std::get<0>(setPolygonPoints(i));
+			Vertex v2 = std::get<1>(setPolygonPoints(i));
+			Vertex v3 = std::get<2>(setPolygonPoints(i));
 
 			//multply the world CS with CurrentMatrix
 			iMatrix CTM = multiplyMatrices(worldCoords, currentMatrix);
 
-			point finalPoint_1 = transformationPoint(currentPoint_1, CTM);
-			point finalPoint_2 = transformationPoint(currentPoint_2, CTM);
-			point finalPoint_3 = transformationPoint(currentPoint_3, CTM);
+			point finalPoint_1 = transformationPoint(v1.P, CTM);
+			point finalPoint_2 = transformationPoint(v2.P, CTM);
+			point finalPoint_3 = transformationPoint(v3.P, CTM);
+
+			//unsigned int v1Colour = packColour(v1.colour);
+			//unsigned int v2Colour = packColour(v2.colour);
+			//unsigned int v3Colour = packColour(v3.colour);
 
 			if (finalPoint_1.x > 650)
 			{
@@ -968,24 +1026,27 @@ bool Client::transformationInterpreter()
 				drawThis.P3 = finalPoint_3;
 
 				// Draw the newly transformed triangle
-
 				orderedCoordinates(drawThis.P1.x, drawThis.P1.y,
 					drawThis.P2.x, drawThis.P2.y,
 					drawThis.P3.x, drawThis.P3.y);
 
 				if (!wire)
 				{
-					depthShading(drawThis.P1, drawThis.P2, drawThis.P3, 0xffffffff, 0x00000000);
-					polygonRenderer(orderedPolygonCoordinates[0].x, orderedPolygonCoordinates[0].y,
-						orderedPolygonCoordinates[1].x, orderedPolygonCoordinates[1].y,
-						orderedPolygonCoordinates[2].x, orderedPolygonCoordinates[2].y, 0xffffffff, 0xffffffff, 0xffffffff);
-					orderedPolygonCoordinates.clear();
+					depthShading(v1, v2, v3, 0, 0, setAmbCheck, setAmb);
 				}
 				else
 				{
-					lineDrawer_DDA(drawThis.P1.x, drawThis.P1.y, drawThis.P2.x, drawThis.P2.y, 0xffffffff, 0xffffffff);
-					lineDrawer_DDA(drawThis.P1.x, drawThis.P1.y, drawThis.P3.x, drawThis.P3.y, 0xffffffff, 0xffffffff);
-					lineDrawer_DDA(drawThis.P2.x, drawThis.P2.y, drawThis.P3.x, drawThis.P3.y, 0xffffffff, 0xffffffff);
+					unsigned int ambientColourPacked;
+					RGBColour ambientColour;
+					if (setAmbCheck)
+					{
+						ambientColour = setAmbient(setAmb, v1.colour);
+						ambientColourPacked = packColour(ambientColour);
+					}
+
+					lineDrawer_DDA(drawThis.P1.x, drawThis.P1.y, drawThis.P2.x, drawThis.P2.y, 0xffffffff, ambientColourPacked);
+					lineDrawer_DDA(drawThis.P1.x, drawThis.P1.y, drawThis.P3.x, drawThis.P3.y, 0xffffffff, ambientColourPacked);
+					lineDrawer_DDA(drawThis.P2.x, drawThis.P2.y, drawThis.P3.x, drawThis.P3.y, 0xffffffff, ambientColourPacked);
 				}
 			}
 
@@ -1000,7 +1061,10 @@ bool Client::transformationInterpreter()
 		}
 		else if (parsedSimpFile[i] == "obj")
 		{
-			objFileReader(parsedSimpFile[i + 1]);
+			//std::string temp = parsedSimpFile[i + 1];
+			//temp.erase(temp.begin());
+			//temp.erase(temp.end()-1);
+			objFileReader(parsedSimpFile[i + 1], setAmbCheck, currentMatrix);
 		}
 		else if (parsedSimpFile[i] == "camera")
 		{
@@ -1008,21 +1072,33 @@ bool Client::transformationInterpreter()
 			float ylow = std::stod(parsedSimpFile[i + 2]);
 			float xhigh = std::stod(parsedSimpFile[i + 3]);
 			float yhigh = std::stod(parsedSimpFile[i + 4]);
-			currentMatrix = CameraPerspective(90, std::stod(parsedSimpFile[i + 5]), std::stod(parsedSimpFile[i + 6]), currentMatrix);
+			currentMatrix = CameraPerspective(90, std::stod(parsedSimpFile[i + 5]), std::stod(parsedSimpFile[i + 6]), xlow, ylow, xhigh, yhigh, currentMatrix);
 		}
 		else if (parsedSimpFile[i] == "ambient")
 		{
-			RGBColour setAmb;
 			setAmb.r = std::stod(parsedSimpFile[i + 1]);
 			setAmb.g = std::stod(parsedSimpFile[i + 2]);
 			setAmb.b = std::stod(parsedSimpFile[i + 3]);
-			setAmbient(setAmb);
+			setAmbCheck = true;
 		}
 		else if (parsedSimpFile[i] == "depth")
 		{
+			RGBColour depthColour;
+
+			depthColour.r = std::stod(parsedSimpFile[i + 3]);
+			depthColour.g = std::stod(parsedSimpFile[i + 4]);
+			depthColour.b = std::stod(parsedSimpFile[i + 5]);
+			//depthShading(std::round(std::stod(parsedSimpFile[i + 1])), std::round(std::stod(parsedSimpFile[i + 2])), depthColour, setAmb);
+
+
+
 		}
 		else if (parsedSimpFile[i] == "surface")
 		{
+			surfaceColour = true;
+			SurfaceColour.r = std::stod(parsedSimpFile[i + 1]);
+			SurfaceColour.g = std::stod(parsedSimpFile[i + 2]);
+			SurfaceColour.b = std::stod(parsedSimpFile[i + 3]);
 		}
 		else
 		{
@@ -1033,8 +1109,268 @@ bool Client::transformationInterpreter()
 	return true;
 }
 
+
 //============================================================
-bool Client::objFileReader(std::string fileName)
+double Client::MatrixDeterminent(iMatrix CTM, int row, int column)
+{
+	iMatrix m;// = CTM;
+	double determ = 0;
+	determ = m.matrix[0][3] * m.matrix[1][2] * m.matrix[2][1] * m.matrix[3][0] - m.matrix[0][2] * m.matrix[1][3] * m.matrix[2][1] * m.matrix[3][0] -
+		m.matrix[0][3] * m.matrix[1][1] * m.matrix[2][2] * m.matrix[3][0] + m.matrix[0][1] * m.matrix[1][3] * m.matrix[2][2] * m.matrix[3][0] +
+		m.matrix[0][2] * m.matrix[1][1] * m.matrix[2][3] * m.matrix[3][0] - m.matrix[0][1] * m.matrix[1][2] * m.matrix[2][3] * m.matrix[3][0] -
+		m.matrix[0][3] * m.matrix[1][2] * m.matrix[2][0] * m.matrix[3][1] + m.matrix[0][2] * m.matrix[1][3] * m.matrix[2][0] * m.matrix[3][1] +
+		m.matrix[0][3] * m.matrix[1][0] * m.matrix[2][2] * m.matrix[3][1] - m.matrix[0][0] * m.matrix[1][3] * m.matrix[2][2] * m.matrix[3][1] -
+		m.matrix[0][2] * m.matrix[1][0] * m.matrix[2][3] * m.matrix[3][1] + m.matrix[0][0] * m.matrix[1][2] * m.matrix[2][3] * m.matrix[3][1] +
+		m.matrix[0][3] * m.matrix[1][1] * m.matrix[2][0] * m.matrix[3][2] - m.matrix[0][1] * m.matrix[1][3] * m.matrix[2][0] * m.matrix[3][2] -
+		m.matrix[0][3] * m.matrix[1][0] * m.matrix[2][1] * m.matrix[3][2] + m.matrix[0][0] * m.matrix[1][3] * m.matrix[2][1] * m.matrix[3][2] +
+		m.matrix[0][1] * m.matrix[1][0] * m.matrix[2][3] * m.matrix[3][2] - m.matrix[0][0] * m.matrix[1][1] * m.matrix[2][3] * m.matrix[3][2] -
+		m.matrix[0][2] * m.matrix[1][1] * m.matrix[2][0] * m.matrix[3][3] + m.matrix[0][1] * m.matrix[1][2] * m.matrix[2][0] * m.matrix[3][3] +
+		m.matrix[0][2] * m.matrix[1][0] * m.matrix[2][1] * m.matrix[3][3] - m.matrix[0][0] * m.matrix[1][2] * m.matrix[2][1] * m.matrix[3][3] -
+		m.matrix[0][1] * m.matrix[1][0] * m.matrix[2][2] * m.matrix[3][3] + m.matrix[0][0] * m.matrix[1][1] * m.matrix[2][2] * m.matrix[3][3];
+	return determ;
+}
+
+//============================================================
+iMatrix Client::transposeMatrix(iMatrix CTM)
+{	
+	iMatrix transposed;
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			transposed.matrix[j][i] = CTM.matrix[i][j];
+		}
+	}
+	return transposed;
+}
+
+//============================================================
+iMatrix Client::inverseMatrix(iMatrix CTM)
+{
+	iMatrix im;
+	iMatrix inverted;
+	double det = MatrixDeterminent(CTM, 4, 4);
+	
+	im.matrix[0][0] = CTM.matrix[1][1] * CTM.matrix[2][2] * CTM.matrix[3][3] + CTM.matrix[1][2] * CTM.matrix[2][3] * CTM.matrix[3][1] + CTM.matrix[1][3] * CTM.matrix[2][1] * CTM.matrix[3][2] - CTM.matrix[1][1] * CTM.matrix[2][3] * CTM.matrix[3][2] - CTM.matrix[1][2] * CTM.matrix[2][1] * CTM.matrix[3][3] - CTM.matrix[1][3] * CTM.matrix[2][2] * CTM.matrix[3][1];
+	im.matrix[0][1] = CTM.matrix[0][1] * CTM.matrix[2][3] * CTM.matrix[3][2] + CTM.matrix[0][2] * CTM.matrix[2][1] * CTM.matrix[3][3] + CTM.matrix[0][3] * CTM.matrix[2][2] * CTM.matrix[3][1] - CTM.matrix[0][1] * CTM.matrix[2][2] * CTM.matrix[3][3] - CTM.matrix[0][2] * CTM.matrix[2][3] * CTM.matrix[3][1] - CTM.matrix[0][3] * CTM.matrix[2][1] * CTM.matrix[3][2];
+	im.matrix[0][2] = CTM.matrix[0][1] * CTM.matrix[1][2] * CTM.matrix[3][3] + CTM.matrix[0][2] * CTM.matrix[1][3] * CTM.matrix[3][1] + CTM.matrix[0][3] * CTM.matrix[1][1] * CTM.matrix[3][2] - CTM.matrix[0][1] * CTM.matrix[1][3] * CTM.matrix[3][2] - CTM.matrix[0][2] * CTM.matrix[1][1] * CTM.matrix[3][3] - CTM.matrix[0][3] * CTM.matrix[1][2] * CTM.matrix[3][1];
+	im.matrix[0][3] = CTM.matrix[0][1] * CTM.matrix[1][3] * CTM.matrix[2][2] + CTM.matrix[0][2] * CTM.matrix[1][1] * CTM.matrix[2][3] + CTM.matrix[0][3] * CTM.matrix[1][2] * CTM.matrix[2][1] - CTM.matrix[0][1] * CTM.matrix[1][2] * CTM.matrix[2][3] - CTM.matrix[0][2] * CTM.matrix[1][3] * CTM.matrix[2][1] - CTM.matrix[0][3] * CTM.matrix[1][1] * CTM.matrix[2][2];
+	im.matrix[1][0] = CTM.matrix[1][0] * CTM.matrix[2][3] * CTM.matrix[3][2] + CTM.matrix[1][2] * CTM.matrix[2][0] * CTM.matrix[3][3] + CTM.matrix[1][3] * CTM.matrix[2][2] * CTM.matrix[3][0] - CTM.matrix[1][0] * CTM.matrix[2][2] * CTM.matrix[3][3] - CTM.matrix[1][2] * CTM.matrix[2][3] * CTM.matrix[3][0] - CTM.matrix[1][3] * CTM.matrix[2][0] * CTM.matrix[3][2];
+	im.matrix[1][1] = CTM.matrix[0][0] * CTM.matrix[2][2] * CTM.matrix[3][3] + CTM.matrix[0][2] * CTM.matrix[2][3] * CTM.matrix[3][0] + CTM.matrix[0][3] * CTM.matrix[2][0] * CTM.matrix[3][2] - CTM.matrix[0][0] * CTM.matrix[2][3] * CTM.matrix[3][2] - CTM.matrix[0][2] * CTM.matrix[2][0] * CTM.matrix[3][3] - CTM.matrix[0][3] * CTM.matrix[2][2] * CTM.matrix[3][0];
+	im.matrix[1][2] = CTM.matrix[0][0] * CTM.matrix[1][3] * CTM.matrix[3][2] + CTM.matrix[0][2] * CTM.matrix[1][0] * CTM.matrix[3][3] + CTM.matrix[0][3] * CTM.matrix[1][2] * CTM.matrix[3][0] - CTM.matrix[0][0] * CTM.matrix[1][2] * CTM.matrix[3][3] - CTM.matrix[0][2] * CTM.matrix[1][3] * CTM.matrix[3][0] - CTM.matrix[0][3] * CTM.matrix[1][0] * CTM.matrix[3][2];
+	im.matrix[1][3] = CTM.matrix[0][0] * CTM.matrix[1][2] * CTM.matrix[2][3] + CTM.matrix[0][2] * CTM.matrix[1][3] * CTM.matrix[2][0] + CTM.matrix[0][3] * CTM.matrix[1][0] * CTM.matrix[2][2] - CTM.matrix[0][0] * CTM.matrix[1][3] * CTM.matrix[2][2] - CTM.matrix[0][2] * CTM.matrix[1][0] * CTM.matrix[2][3] - CTM.matrix[0][3] * CTM.matrix[1][2] * CTM.matrix[2][0];
+	im.matrix[2][0] = CTM.matrix[1][0] * CTM.matrix[2][1] * CTM.matrix[3][3] + CTM.matrix[1][1] * CTM.matrix[2][3] * CTM.matrix[3][0] + CTM.matrix[1][3] * CTM.matrix[2][0] * CTM.matrix[3][1] - CTM.matrix[1][0] * CTM.matrix[2][3] * CTM.matrix[3][1] - CTM.matrix[1][1] * CTM.matrix[2][0] * CTM.matrix[3][3] - CTM.matrix[1][3] * CTM.matrix[2][1] * CTM.matrix[3][0];
+	im.matrix[2][1] = CTM.matrix[0][0] * CTM.matrix[2][3] * CTM.matrix[3][1] + CTM.matrix[0][1] * CTM.matrix[2][0] * CTM.matrix[3][3] + CTM.matrix[0][3] * CTM.matrix[2][1] * CTM.matrix[3][0] - CTM.matrix[0][0] * CTM.matrix[2][1] * CTM.matrix[3][3] - CTM.matrix[0][1] * CTM.matrix[2][3] * CTM.matrix[3][0] - CTM.matrix[0][3] * CTM.matrix[2][0] * CTM.matrix[3][1];
+	im.matrix[2][2] = CTM.matrix[0][0] * CTM.matrix[1][1] * CTM.matrix[3][3] + CTM.matrix[0][1] * CTM.matrix[1][3] * CTM.matrix[3][0] + CTM.matrix[0][3] * CTM.matrix[1][0] * CTM.matrix[3][1] - CTM.matrix[0][0] * CTM.matrix[1][3] * CTM.matrix[3][1] - CTM.matrix[0][1] * CTM.matrix[1][0] * CTM.matrix[3][3] - CTM.matrix[0][3] * CTM.matrix[1][1] * CTM.matrix[3][0];
+	im.matrix[2][3] = CTM.matrix[0][0] * CTM.matrix[1][3] * CTM.matrix[2][1] + CTM.matrix[0][1] * CTM.matrix[1][0] * CTM.matrix[2][3] + CTM.matrix[0][3] * CTM.matrix[1][1] * CTM.matrix[2][0] - CTM.matrix[0][0] * CTM.matrix[1][1] * CTM.matrix[2][3] - CTM.matrix[0][1] * CTM.matrix[1][3] * CTM.matrix[2][0] - CTM.matrix[0][3] * CTM.matrix[1][0] * CTM.matrix[2][1];
+	im.matrix[3][0] = CTM.matrix[1][0] * CTM.matrix[2][2] * CTM.matrix[3][1] + CTM.matrix[1][1] * CTM.matrix[2][0] * CTM.matrix[3][2] + CTM.matrix[1][2] * CTM.matrix[2][1] * CTM.matrix[3][0] - CTM.matrix[1][0] * CTM.matrix[2][1] * CTM.matrix[3][2] - CTM.matrix[1][1] * CTM.matrix[2][2] * CTM.matrix[3][0] - CTM.matrix[1][2] * CTM.matrix[2][0] * CTM.matrix[3][1];
+	im.matrix[3][1] = CTM.matrix[0][0] * CTM.matrix[2][1] * CTM.matrix[3][2] + CTM.matrix[0][1] * CTM.matrix[2][2] * CTM.matrix[3][0] + CTM.matrix[0][2] * CTM.matrix[2][0] * CTM.matrix[3][1] - CTM.matrix[0][0] * CTM.matrix[2][2] * CTM.matrix[3][1] - CTM.matrix[0][1] * CTM.matrix[2][0] * CTM.matrix[3][2] - CTM.matrix[0][2] * CTM.matrix[2][1] * CTM.matrix[3][0];
+	im.matrix[3][2] = CTM.matrix[0][0] * CTM.matrix[1][2] * CTM.matrix[3][1] + CTM.matrix[0][1] * CTM.matrix[1][0] * CTM.matrix[3][2] + CTM.matrix[0][2] * CTM.matrix[1][1] * CTM.matrix[3][0] - CTM.matrix[0][0] * CTM.matrix[1][1] * CTM.matrix[3][2] - CTM.matrix[0][1] * CTM.matrix[1][2] * CTM.matrix[3][0] - CTM.matrix[0][2] * CTM.matrix[1][0] * CTM.matrix[3][1];
+	im.matrix[3][3] = CTM.matrix[0][0] * CTM.matrix[1][1] * CTM.matrix[2][2] + CTM.matrix[0][1] * CTM.matrix[1][2] * CTM.matrix[2][0] + CTM.matrix[0][2] * CTM.matrix[1][0] * CTM.matrix[2][1] - CTM.matrix[0][0] * CTM.matrix[1][2] * CTM.matrix[2][1] - CTM.matrix[0][1] * CTM.matrix[1][0] * CTM.matrix[2][3] - CTM.matrix[0][2] * CTM.matrix[1][1] * CTM.matrix[2][0];
+
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			inverted.matrix[i][j] = im.matrix[i][j] / det;
+		}
+	}
+	return inverted;
+}
+
+//============================================================
+std::tuple<Vertex, Vertex> Client::setLinePoints(int i)
+{
+	int count = 0;
+	int inc = 0;
+	Vertex v1;
+	Vertex v2;
+
+	int startPoint = i + 1;
+	while (!isdigit(std::stod(parsedSimpFile[startPoint + inc])))
+	{
+		count++;
+		inc++;
+	}
+	
+	// We have no colour
+	if (count == 6)
+	{
+		v1.P.x = std::round(std::stod(parsedSimpFile[i + 1]));
+		v1.P.y = std::round(std::stod(parsedSimpFile[i + 2]));
+		v1.P.z = std::round(std::stod(parsedSimpFile[i + 3]));
+		v1.P.w = 1;
+
+		v2.P.x = std::round(std::stod(parsedSimpFile[i + 4]));
+		v2.P.y = std::round(std::stod(parsedSimpFile[i + 5]));
+		v2.P.z = std::round(std::stod(parsedSimpFile[i + 6]));
+		v2.P.w = 1;
+	}
+	// We have a colour for 1 point
+	else if (count == 9)
+	{
+		//v1.colour.hasColour = true;
+		//v2.colour.hasColour = true;
+		// If the 2nd point has no colour then the next token shouldn't be a digit
+		if (!isdigit(std::stod(parsedSimpFile[i + 7])))
+		{
+			v1.P.x = std::round(std::stod(parsedSimpFile[i + 1]));
+			v1.P.y = std::round(std::stod(parsedSimpFile[i + 2]));
+			v1.P.z = std::round(std::stod(parsedSimpFile[i + 3]));
+			v1.P.w = 1;
+			int red =  
+			v1.colour.r = std::stod(parsedSimpFile[i + 4]);
+			v1.colour.g = std::stod(parsedSimpFile[i + 5]);
+			v1.colour.b = std::stod(parsedSimpFile[i + 6]);
+
+			v2.P.x = std::round(std::stod(parsedSimpFile[i + 7]));
+			v2.P.y = std::round(std::stod(parsedSimpFile[i + 8]));
+			v2.P.z = std::round(std::stod(parsedSimpFile[i + 9]));
+			v2.P.w = 1;
+			v2.colour.r = v1.colour.r;
+			v2.colour.g = v1.colour.g;
+			v2.colour.b = v1.colour.b;
+		}
+
+		// Point 2 has the colour
+		else
+		{
+			//v1.colour.hasColour = true;
+			//v2.colour.hasColour = true;
+
+			v1.P.x = std::round(std::stod(parsedSimpFile[i + 1]));
+			v1.P.y = std::round(std::stod(parsedSimpFile[i + 2]));
+			v1.P.z = std::round(std::stod(parsedSimpFile[i + 3]));
+			v1.P.w = 1;
+			v1.colour.r = v2.colour.r;
+			v1.colour.g = v2.colour.g;
+			v1.colour.b = v2.colour.b;
+
+			v2.P.x = std::round(std::stod(parsedSimpFile[i + 4]));
+			v2.P.y = std::round(std::stod(parsedSimpFile[i + 5]));
+			v2.P.z = std::round(std::stod(parsedSimpFile[i + 6]));
+			v2.P.w = 1;
+			v2.colour.r = std::stod(parsedSimpFile[i + 7]);
+			v2.colour.g = std::stod(parsedSimpFile[i + 8]);
+			v2.colour.b = std::stod(parsedSimpFile[i + 9]);
+
+			v1.colour.r = v2.colour.r;
+			v1.colour.g = v2.colour.g;
+			v1.colour.b = v2.colour.b;
+		}
+	}
+
+	// They both have the same colour
+	else
+	{
+		//v1.colour.hasColour = true;
+		//v2.colour.hasColour = true;
+
+		v1.P.x = std::round(std::stod(parsedSimpFile[i + 1]));
+		v1.P.y = std::round(std::stod(parsedSimpFile[i + 2]));
+		v1.P.z = std::round(std::stod(parsedSimpFile[i + 3]));
+		v1.P.w = 1;
+		v1.colour.r = std::stod(parsedSimpFile[i + 4]);
+		v1.colour.g = std::stod(parsedSimpFile[i + 5]);
+		v1.colour.b = std::stod(parsedSimpFile[i + 6]);
+
+		v2.P.x = std::round(std::stod(parsedSimpFile[i + 7]));
+		v2.P.y = std::round(std::stod(parsedSimpFile[i + 8]));
+		v2.P.z = std::round(std::stod(parsedSimpFile[i + 9]));
+		v2.P.w = 1;
+		v2.colour.r = v1.colour.r;
+		v2.colour.g = v1.colour.g;
+		v2.colour.b = v1.colour.b;
+	}
+
+	return std::make_tuple(v1, v2);
+}
+
+//============================================================
+std::tuple<Vertex, Vertex, Vertex> Client::setPolygonPoints(int i)
+{
+	double red = 0;
+	double blue = 0;
+	double green = 0;
+
+	int count = 0;
+	int inc = 0;
+	Vertex v1;
+	Vertex v2;
+	Vertex v3;
+	size_t p = 0;
+	int startPoint = i + 1;
+		while (parsedSimpFile[startPoint + inc].find_first_of("abcdefghijklmnopqrstuvwxyz{}", p))
+		{
+			count++;
+			inc++;
+			if (startPoint + inc >= parsedSimpFile.size())
+			{
+				break;
+			}
+		}
+	
+	if (count == 9)
+	{
+		v1.P.x = std::round(std::stod(parsedSimpFile[i + 1]));
+		v1.P.y = std::round(std::stod(parsedSimpFile[i + 2]));
+		v1.P.z = std::round(std::stod(parsedSimpFile[i + 3]));
+		v1.P.w = 1;
+
+		v2.P.x = std::round(std::stod(parsedSimpFile[i + 4]));
+		v2.P.y = std::round(std::stod(parsedSimpFile[i + 5]));
+		v2.P.z = std::round(std::stod(parsedSimpFile[i + 6]));
+		v2.P.w = 1;
+
+		v3.P.x = std::round(std::stod(parsedSimpFile[i + 7]));
+		v3.P.y = std::round(std::stod(parsedSimpFile[i + 8]));
+		v3.P.z = std::round(std::stod(parsedSimpFile[i + 9]));
+		v3.P.w = 1;
+	}
+	
+	else
+	{
+		v1.P.x = std::round(std::stod(parsedSimpFile[i + 1]));
+		v1.P.y = std::round(std::stod(parsedSimpFile[i + 2]));
+		v1.P.z = std::round(std::stod(parsedSimpFile[i + 3]));
+		v1.P.w = 1;
+		red = std::stod(parsedSimpFile[i + 4]);
+		blue = std::stod(parsedSimpFile[i + 5]);
+		green = std::stod(parsedSimpFile[i + 6]);
+
+		v2.P.x = std::round(std::stod(parsedSimpFile[i + 7]));
+		v2.P.y = std::round(std::stod(parsedSimpFile[i + 8]));
+		v2.P.z = std::round(std::stod(parsedSimpFile[i + 9]));
+		v2.P.w = 1;
+		v2.colour.r = v1.colour.r;
+		v2.colour.g = v1.colour.g;
+		v2.colour.b = v1.colour.b;
+
+		v3.P.x = std::round(std::stod(parsedSimpFile[i + 10]));
+		v3.P.y = std::round(std::stod(parsedSimpFile[i + 11]));
+		v3.P.z = std::round(std::stod(parsedSimpFile[i + 12]));
+		v3.P.w = 1;
+		v3.colour.r = v1.colour.r;
+		v3.colour.g = v1.colour.g;
+		v3.colour.b = v1.colour.b;
+
+		v1.colour.r = red;
+		v1.colour.g = green;
+		v1.colour.b = blue;
+
+		v2.colour.r = red;
+		v2.colour.g = green;
+		v2.colour.b = blue;
+
+		v3.colour.r = red;
+		v3.colour.g = green;
+		v3.colour.b = blue;
+	}
+	return std::make_tuple(v1, v2, v3);
+}
+
+//============================================================
+bool Client::objFileReader(std::string fileName, bool setAmb, iMatrix CTM)
 {
 	std::ifstream file;
 	std::stringstream buffer;
@@ -1059,7 +1395,7 @@ bool Client::objFileReader(std::string fileName)
 	{
 		objFileInterpreter(results[i]);
 	}
-	transformObjFile();
+	transformObjFile(CTM, setAmb);
 }
 
 //============================================================
@@ -1116,11 +1452,17 @@ bool Client::objFileInterpreter(std::string currentLine)
 }
 
 //============================================================
-void Client::transformObjFile()
+void Client::transformObjFile(iMatrix currentMatrix, bool setAmb)
 {
 	Vertex tempVertex; // Temporary place holder for a read vertex 
 	Normal tempNormal; // Temporary place holder for a read Normal vertex
 	Face tempFace; // Temporary place holder for a read Face
+
+	unsigned int ambientColourPacked;
+	RGBColour ambientColour;
+	RGBColour filledVertex1Colour;
+	RGBColour filledVertex2Colour;
+	RGBColour filledVertex3Colour;
 
 	// We know we want to store the vertex descriptions i.e
 	// Vertex 1: v 1 1 1 
@@ -1148,31 +1490,33 @@ void Client::transformObjFile()
 			// Case 1) X Y Z W R G B (i+8)
 			if ((parsedObjFile[i + 8] == "v") || (parsedObjFile[i + 8] == "vn") || (parsedObjFile[i + 8] == "f") || (parsedObjFile[i + 8] == "#"))
 			{
-				tempVertex.P.x = std::stod(parsedObjFile[i + 1]);
-				tempVertex.P.y = std::stod(parsedObjFile[i + 2]);
-				tempVertex.P.z = std::stod(parsedObjFile[i + 3]);
-				tempVertex.P.w = std::stod(parsedObjFile[i + 4]);
-				tempVertex.colour.r = std::round(tempVertex.colour.r * std::stod(parsedObjFile[i + 5]));
-				tempVertex.colour.g = std::round(tempVertex.colour.g * std::stod(parsedObjFile[i + 6]));
-				tempVertex.colour.b = std::round(tempVertex.colour.b * std::stod(parsedObjFile[i + 7]));
+				tempVertex.P.x = std::stod(parsedObjFile[i + 1]) * 650;
+				tempVertex.P.y = std::stod(parsedObjFile[i + 2]) * 650;
+				tempVertex.P.z = std::stod(parsedObjFile[i + 3]) * 650;
+				//tempVertex.P.w = std::stod(parsedObjFile[i + 4]) * 650;
+				//tempVertex.colour.r = std::round(tempVertex.colour.r * std::stod(parsedObjFile[i + 5]));
+				//tempVertex.colour.g = std::round(tempVertex.colour.g * std::stod(parsedObjFile[i + 6]));
+				//tempVertex.colour.b = std::round(tempVertex.colour.b * std::stod(parsedObjFile[i + 7]));
+				tempVertex.hasColour = true;
 			}
 			// Case 2) X Y Z R G B (i+7)
 			else if ((parsedObjFile[i + 7] == "v") || (parsedObjFile[i + 7] == "vn") || (parsedObjFile[i + 7] == "f") || (parsedObjFile[i + 7] == "#"))
 			{
-				tempVertex.P.x = std::stod(parsedObjFile[i + 1]);
-				tempVertex.P.y = std::stod(parsedObjFile[i + 2]);
-				tempVertex.P.z = std::stod(parsedObjFile[i + 3]);
-				tempVertex.colour.r = std::round(tempVertex.colour.r * std::stod(parsedObjFile[i + 4]));
-				tempVertex.colour.g = std::round(tempVertex.colour.g * std::stod(parsedObjFile[i + 5]));
-				tempVertex.colour.b = std::round(tempVertex.colour.b * std::stod(parsedObjFile[i + 6]));
+				tempVertex.P.x = std::stod(parsedObjFile[i + 1]) * 650;
+				tempVertex.P.y = std::stod(parsedObjFile[i + 2]) * 650;
+				tempVertex.P.z = std::stod(parsedObjFile[i + 3]) * 650;
+				//tempVertex.colour.r = std::round(tempVertex.colour.r * std::stod(parsedObjFile[i + 4]));
+				//tempVertex.colour.g = std::round(tempVertex.colour.g * std::stod(parsedObjFile[i + 5]));
+				//tempVertex.colour.b = std::round(tempVertex.colour.b * std::stod(parsedObjFile[i + 6]));
+				tempVertex.hasColour = true;
 			}
 			// Case 3) X Y Z W (i+5)
 			else if ((parsedObjFile[i + 5] == "v") || (parsedObjFile[i + 5] == "vn") || (parsedObjFile[i + 5] == "f") || (parsedObjFile[i + 5] == "#"))
 			{
-				tempVertex.P.x = std::stod(parsedObjFile[i + 1]);
-				tempVertex.P.y = std::stod(parsedObjFile[i + 2]);
-				tempVertex.P.z = std::stod(parsedObjFile[i + 3]);
-				tempVertex.P.w = std::stod(parsedObjFile[i + 4]);
+				tempVertex.P.x = std::stod(parsedObjFile[i + 1]) * 650;
+				tempVertex.P.y = std::stod(parsedObjFile[i + 2]) * 650;
+				tempVertex.P.z = std::stod(parsedObjFile[i + 3]) * 650;
+				tempVertex.P.w = std::stod(parsedObjFile[i + 4]) * 650;
 				tempVertex.colour.r = 255;
 				tempVertex.colour.g = 255;
 				tempVertex.colour.b = 255;
@@ -1180,9 +1524,9 @@ void Client::transformObjFile()
 			// Case 4) X Y Z (i+4)
 			else if ((parsedObjFile[i + 4] == "v") || (parsedObjFile[i + 4] == "vn") || (parsedObjFile[i + 4] == "f") || (parsedObjFile[i + 4] == "#"))
 			{
-				tempVertex.P.x = std::stod(parsedObjFile[i + 1]);
-				tempVertex.P.y = std::stod(parsedObjFile[i + 2]);
-				tempVertex.P.z = std::stod(parsedObjFile[i + 3]);
+				tempVertex.P.x = std::stod(parsedObjFile[i + 1]) * 650;
+				tempVertex.P.y = std::stod(parsedObjFile[i + 2]) * 650;
+				tempVertex.P.z = std::stod(parsedObjFile[i + 3]) * 650;
 				tempVertex.P.w = 1;
 				tempVertex.colour.r = 255;
 				tempVertex.colour.g = 255;
@@ -1192,9 +1536,9 @@ void Client::transformObjFile()
 		}
 		else if (parsedObjFile[i] == "vn")
 		{
-			tempNormal.P.x = std::stod(parsedObjFile[i + 1]);
-			tempNormal.P.y = std::stod(parsedObjFile[i + 2]);
-			tempNormal.P.z = std::stod(parsedObjFile[i + 3]);
+			tempNormal.P.x = std::stod(parsedObjFile[i + 1]) * 650;
+			tempNormal.P.y = std::stod(parsedObjFile[i + 2]) * 650;
+			tempNormal.P.z = std::stod(parsedObjFile[i + 3]) * 650;
 			objNormalArray.push_back(tempNormal);
 		}
 		else if (parsedObjFile[i] == "f")
@@ -1230,8 +1574,133 @@ void Client::transformObjFile()
 		else
 		{
 			// Do nothing
+		}	
+	}
+
+	iMatrix worldCoords;
+	worldCoords.matrix[0][0] = 3.25;
+	worldCoords.matrix[1][1] = 3.25;
+	worldCoords.matrix[0][3] = 325;
+	worldCoords.matrix[1][3] = 325;
+
+	// Once we read the object file, we will plot the face array
+	// with the current CTM
+	for (int i = 0; i < objFaceArray.size(); i++)
+	{
+
+		Vertex v1 = objFaceArray[i].vertex_1;
+		Vertex v2 = objFaceArray[i].vertex_2;
+		Vertex v3 = objFaceArray[i].vertex_3;
+
+		//multply the world CS with CurrentMatrix
+		iMatrix CTM;
+		CTM = multiplyMatrices(worldCoords, currentMatrix);
+
+		point finalPoint_1 = transformationPoint(v1.P, CTM);
+		point finalPoint_2 = transformationPoint(v2.P, CTM);
+		point finalPoint_3 = transformationPoint(v3.P, CTM);
+
+		if (finalPoint_1.x > 650)
+		{
+			finalPoint_1.x = 650;
 		}
-		
+		else if (finalPoint_1.x < 50)
+		{
+			finalPoint_1.x = 50;
+		}
+		if (finalPoint_1.y > 650)
+		{
+			finalPoint_1.y = 650;
+		}
+		else if (finalPoint_1.y < 50)
+		{
+			finalPoint_1.y = 50;
+		}
+		// --
+		if (finalPoint_2.x > 650)
+		{
+			finalPoint_2.x = 650;
+		}
+		else if (finalPoint_2.x < 50)
+		{
+			finalPoint_2.x = 50;
+		}
+		if (finalPoint_2.y > 650)
+		{
+			finalPoint_2.y = 650;
+		}
+		else if (finalPoint_2.y < 50)
+		{
+			finalPoint_2.y = 50;
+		}
+
+		// --
+		if (finalPoint_3.x > 650)
+		{
+			finalPoint_3.x = 650;
+		}
+		else if (finalPoint_3.x < 50)
+		{
+			finalPoint_3.x = 50;
+		}
+		if (finalPoint_3.y > 650)
+		{
+			finalPoint_3.y = 650;
+		}
+		else if (finalPoint_3.y < 50)
+		{
+			finalPoint_3.y = 50;
+		}
+
+		// --
+		if ((finalPoint_1.z || finalPoint_2.z || finalPoint_3.z)> 200)
+		{
+			// Do nothing
+		}
+		else
+		{
+			triangle drawThis;
+			drawThis.P1 = finalPoint_1;
+			drawThis.P2 = finalPoint_2;
+			drawThis.P3 = finalPoint_3;
+
+			// Draw the newly transformed triangle
+
+			orderedCoordinates(drawThis.P1.x, drawThis.P1.y,
+				drawThis.P2.x, drawThis.P2.y,
+				drawThis.P3.x, drawThis.P3.y);
+
+			if (!wire)
+			{
+				if (v1.hasColour)
+				{
+					filledVertex1Colour.r = v1.colour.r * 255;
+					filledVertex1Colour.g = v1.colour.g * 255;
+					filledVertex1Colour.b = v1.colour.b * 255;
+				}
+				if (v2.hasColour)
+				{
+					filledVertex2Colour.r = v2.colour.r * 255;
+					filledVertex2Colour.g = v2.colour.g * 255;
+					filledVertex2Colour.b = v2.colour.b * 255;
+				}
+				if (v3.hasColour)
+				{
+					filledVertex2Colour.r = v3.colour.r * 255;
+					filledVertex2Colour.g = v3.colour.g * 255;
+					filledVertex2Colour.b = v3.colour.b * 255;
+				}
+
+				//depthShading(drawThis.P1, drawThis.P2, drawThis.P3, 0xffffffff, 0x00000000, false);
+			}
+			else
+			{
+				lineDrawer_DDA(drawThis.P1.x, drawThis.P1.y, drawThis.P2.x, drawThis.P2.y, 0xffffffff, 0x00000000);
+				lineDrawer_DDA(drawThis.P1.x, drawThis.P1.y, drawThis.P3.x, drawThis.P3.y, 0xffffffff, 0x00000000);
+				lineDrawer_DDA(drawThis.P2.x, drawThis.P2.y, drawThis.P3.x, drawThis.P3.y, 0xffffffff, 0x00000000);
+			}
+		}
+
 	}
 }
 
@@ -1240,15 +1709,20 @@ point Client::transformationPoint(point pointToChange, iMatrix transformationMat
 {
 	point newPoint;
 	newPoint.z = 1;
-	newPoint.w = 1;
 	int zToChange = 1;
 	int shouldBeOne = 1;
-	int someW = 1;
 
 	newPoint.x = std::round(transformationMatrix.matrix[0][0] * pointToChange.x + transformationMatrix.matrix[0][1] * pointToChange.y + transformationMatrix.matrix[0][2] * pointToChange.z + transformationMatrix.matrix[0][3]);
 	newPoint.y = std::round(transformationMatrix.matrix[1][0] * pointToChange.x + transformationMatrix.matrix[1][1] * pointToChange.y + transformationMatrix.matrix[1][2] * pointToChange.z + transformationMatrix.matrix[1][3]);
 	newPoint.z = std::round(transformationMatrix.matrix[2][0] * pointToChange.x + transformationMatrix.matrix[2][1] * pointToChange.y + transformationMatrix.matrix[2][2] * pointToChange.z + transformationMatrix.matrix[2][3]);
-	
+	newPoint.w = std::round(transformationMatrix.matrix[3][0] * pointToChange.x + transformationMatrix.matrix[3][1] * pointToChange.y + transformationMatrix.matrix[3][2] * pointToChange.z + transformationMatrix.matrix[3][3]);
+
+	if (newPoint.w != 1)
+	{
+		newPoint.x = newPoint.x / newPoint.w;
+		newPoint.y = newPoint.y / newPoint.w;
+		newPoint.z = newPoint.z / newPoint.w;
+	}
 	return newPoint;
 }
 
@@ -1258,7 +1732,6 @@ iMatrix Client::transformationRotate(std::string axis, double numberOfDegrees, i
 	iMatrix rotation;
 
 	// Let's set the rotational matrix to our specific degree to the axis we want to rotate on
-	// TODO: Fix X Y rotation
 	// If it doesn't work then, just simply rotation on Z :3
 	if (axis == "X")
 	{
@@ -1352,27 +1825,21 @@ iMatrix Client::transformationScale(double scaleX, double scaleY, double scaleZ,
 
 //============================================================
 // Changing Camera Perspective
-iMatrix Client::CameraPerspective(float degrees, float zNear, float zFar, iMatrix CTM)
+iMatrix Client::CameraPerspective(float degrees, float zNear, float zFar, float xlow, float ylow, float xhi, float yhi, iMatrix CTM)
 {
-	iMatrix camera;
-	// Setting the perspective Matrix
-	// zNear = hither
-	// zFar = yon
-	float s = 1 / (tan(degrees * (1 / 2) * M_PI / 180));
-	camera.matrix[0][0] = s;
-	camera.matrix[1][1] = s;
-	camera.matrix[2][2] = -zFar / (zFar - zNear);
-	camera.matrix[3][2] = -zFar * zNear / (zFar - zNear);
-	camera.matrix[2][3] = -1;
-	camera.matrix[3][3] = 0;
-
-	return multiplyMatrices(CTM, camera);
+	iMatrix M = inverseMatrix(CTM);
+	return multiplyMatrices(CTM, M);
 }
 
 //============================================================
-void Client::setAmbient(RGBColour setAmbientColour)
+RGBColour Client::setAmbient(RGB setAmbientColour, RGB currentColour)
 {
+	RGBColour newColour;
+	newColour.r = setAmbientColour.r * currentColour.r * 255;
+	newColour.b = setAmbientColour.b * currentColour.b * 255;
+	newColour.g = setAmbientColour.g * currentColour.g * 255;
 
+	return newColour;
 }
 
 //============================================================

@@ -23,21 +23,30 @@ struct grid
 
 struct RGBColour
 {
-	int r;
-	int g;
-	int b;
-	int o;
+	int r = 0;
+	int g = 0;
+	int b = 0;
+	int o = 0;
+	bool hasColour = false;
+};
+
+struct RGB
+{
+	double r = 1;
+	double g = 1;
+	double b = 1;
 };
 
 // Identity matrix
 struct iMatrix
 {
 	float matrix[4][4];
+
 	iMatrix()
 	{
-		for (int i = 0; i<4; i++) 
+		for (int i = 0; i < 4; i++)
 		{
-			for (int j = 0; j<4; j++) 
+			for (int j = 0; j < 4; j++)
 			{
 				if (i == j)
 				{
@@ -65,7 +74,8 @@ struct point
 struct Vertex
 {
 	point P;
-	RGBColour colour;
+	RGB colour;
+	bool hasColour = false;
 };
 
 // Storage of a normal vector
@@ -109,6 +119,12 @@ public:
 	point page3TransformHelper(iMatrix transformationMatrix, point P);
 
 	//============================================================
+	std::tuple<Vertex, Vertex, Vertex> setPolygonPoints(int currentIndex);
+
+	//============================================================
+	std::tuple<Vertex, Vertex> setLinePoints(int currentIndex);
+
+	//============================================================
 	// This will calculate the line endpoints for the starburst test
 	//
 	// Returns the endpoints of the specific angle (round(x),round(y))
@@ -148,6 +164,11 @@ private:
 		int x = 0;
 		int y = 0;
 	};
+
+	int currentIndex = 0;
+	int newFileIndex = 0;
+	int firstSimpCount = 0;
+	bool firstSimp = true;
 	std::vector<polygonCoordinates> orderedPolygonCoordinates;
 	std::vector<std::string> parsedSimpFile;
 	std::vector<std::string> parsedObjFile;
@@ -193,6 +214,8 @@ private:
 	// we can calculate and interpolate
 	//============================================================
 	void lineDrawer_DDA(int x1, int y1, int x2, int y2, unsigned int color1, unsigned int color2);
+
+	unsigned int Lerp(unsigned int a, unsigned int b, double t);
 
 	//============================================================
 	// Polygon Renderer
@@ -244,7 +267,7 @@ private:
 
 	//============================================================
 	// Reads a obj file
-	bool objFileReader(std::string fileName);
+	bool objFileReader(std::string fileName,bool setAmb, iMatrix currentMatrix);
 
 	//============================================================
 	// Parses through the obj file
@@ -252,22 +275,31 @@ private:
 
 	//============================================================
 	// Stores all the objFile vertices, vertex normals & faces
-	void transformObjFile();
+	void transformObjFile(iMatrix CTM, bool setAmb);
 
 	//============================================================
 	// CameraPerspective
-	iMatrix CameraPerspective(float degrees, float zNear, float zFar, iMatrix CTM);
+	iMatrix CameraPerspective(float degrees, float zNear, float zFar, float xlow, float ylow, float xhi, float yhi, iMatrix CTM);
 
 	//============================================================
 	// Making an ambient lighting
-	void setAmbient(RGBColour setAmbientColour);
+	RGBColour setAmbient(RGB setAmbientColour, RGB currentColour);
 
 	//============================================================
 	// Unsure what this does so far
-	void depthShading(point P1, point P2, point P3, unsigned int nearColour, unsigned int farColour);
+	void depthShading(Vertex P1, Vertex P2, Vertex P3, float near, float far, bool setAmb, RGB ambientColour);
 
 	//============================================================
 	void zBuffer(triangle caseThreeTriangle);
+
+	//============================================================
+	double MatrixDeterminent(iMatrix CTM, int row, int column);
+
+	iMatrix reduceMatrix(int column, int row, iMatrix CTM);
+
+	iMatrix transposeMatrix(iMatrix CTM);
+
+	iMatrix inverseMatrix(iMatrix CTM);
 
 	//============================================================
 	// Possible Tests for Assignment 2
