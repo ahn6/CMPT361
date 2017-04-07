@@ -1,4 +1,5 @@
 #include "client.h"
+#include "light.h"
 #include <algorithm>
 # define M_PI           3.14159265358979323846  /* pi */
 double zbuff[650][650];
@@ -808,6 +809,7 @@ bool Client::transformationInterpreter()
 	RGBColour setAmbConverted;
 
 	RGB SurfaceColour;
+	RGBColour lightColour;
 
 	bool setAmbCheck = false;
 	// This will convert the simpFile coordinates space into
@@ -1061,10 +1063,10 @@ bool Client::transformationInterpreter()
 		}
 		else if (parsedSimpFile[i] == "obj")
 		{
-			//std::string temp = parsedSimpFile[i + 1];
-			//temp.erase(temp.begin());
-			//temp.erase(temp.end()-1);
-			objFileReader(parsedSimpFile[i + 1], setAmbCheck, currentMatrix);
+			std::string temp = parsedSimpFile[i + 1];
+			temp.erase(temp.begin());
+			temp.erase(temp.end()-1);
+			objFileReader(temp, setAmbCheck, currentMatrix);
 		}
 		else if (parsedSimpFile[i] == "camera")
 		{
@@ -1099,6 +1101,29 @@ bool Client::transformationInterpreter()
 			SurfaceColour.r = std::stod(parsedSimpFile[i + 1]);
 			SurfaceColour.g = std::stod(parsedSimpFile[i + 2]);
 			SurfaceColour.b = std::stod(parsedSimpFile[i + 3]);
+		}
+		else if (parsedSimpFile[i] == "light")
+		{
+			int A = 0;
+			int B = 0;
+			lightColour.r = std::stod(parsedSimpFile[i + 1]) * 255;
+			lightColour.g = std::stod(parsedSimpFile[i + 2]) * 255;
+			lightColour.b = std::stod(parsedSimpFile[i + 3]) * 255;
+			A = std::stod(parsedSimpFile[i + 4]);
+			B = std::stod(parsedSimpFile[i + 5]);
+
+		}
+		else if (parsedSimpFile[i] == "phong")
+		{
+			Light phong(currentMatrix, Phong, objVertexArray, objNormalArray);
+		}
+		else if (parsedSimpFile[i] == "gouraud")
+		{
+			Light gouraud(currentMatrix, Gouraud, objVertexArray, objNormalArray);
+		}
+		else if (parsedSimpFile[i] == "flat")
+		{
+			Light flat(currentMatrix, Flat, objVertexArray, objNormalArray);
 		}
 		else
 		{
@@ -1487,46 +1512,12 @@ void Client::transformObjFile(iMatrix currentMatrix, bool setAmb)
 		}
 		else if (parsedObjFile[i] == "v")
 		{
-			// Case 1) X Y Z W R G B (i+8)
-			if ((parsedObjFile[i + 8] == "v") || (parsedObjFile[i + 8] == "vn") || (parsedObjFile[i + 8] == "f") || (parsedObjFile[i + 8] == "#"))
-			{
-				tempVertex.P.x = std::stod(parsedObjFile[i + 1]) * 650;
-				tempVertex.P.y = std::stod(parsedObjFile[i + 2]) * 650;
-				tempVertex.P.z = std::stod(parsedObjFile[i + 3]) * 650;
-				//tempVertex.P.w = std::stod(parsedObjFile[i + 4]) * 650;
-				//tempVertex.colour.r = std::round(tempVertex.colour.r * std::stod(parsedObjFile[i + 5]));
-				//tempVertex.colour.g = std::round(tempVertex.colour.g * std::stod(parsedObjFile[i + 6]));
-				//tempVertex.colour.b = std::round(tempVertex.colour.b * std::stod(parsedObjFile[i + 7]));
-				tempVertex.hasColour = true;
-			}
-			// Case 2) X Y Z R G B (i+7)
-			else if ((parsedObjFile[i + 7] == "v") || (parsedObjFile[i + 7] == "vn") || (parsedObjFile[i + 7] == "f") || (parsedObjFile[i + 7] == "#"))
-			{
-				tempVertex.P.x = std::stod(parsedObjFile[i + 1]) * 650;
-				tempVertex.P.y = std::stod(parsedObjFile[i + 2]) * 650;
-				tempVertex.P.z = std::stod(parsedObjFile[i + 3]) * 650;
-				//tempVertex.colour.r = std::round(tempVertex.colour.r * std::stod(parsedObjFile[i + 4]));
-				//tempVertex.colour.g = std::round(tempVertex.colour.g * std::stod(parsedObjFile[i + 5]));
-				//tempVertex.colour.b = std::round(tempVertex.colour.b * std::stod(parsedObjFile[i + 6]));
-				tempVertex.hasColour = true;
-			}
-			// Case 3) X Y Z W (i+5)
-			else if ((parsedObjFile[i + 5] == "v") || (parsedObjFile[i + 5] == "vn") || (parsedObjFile[i + 5] == "f") || (parsedObjFile[i + 5] == "#"))
-			{
-				tempVertex.P.x = std::stod(parsedObjFile[i + 1]) * 650;
-				tempVertex.P.y = std::stod(parsedObjFile[i + 2]) * 650;
-				tempVertex.P.z = std::stod(parsedObjFile[i + 3]) * 650;
-				tempVertex.P.w = std::stod(parsedObjFile[i + 4]) * 650;
-				tempVertex.colour.r = 255;
-				tempVertex.colour.g = 255;
-				tempVertex.colour.b = 255;
-			}
 			// Case 4) X Y Z (i+4)
-			else if ((parsedObjFile[i + 4] == "v") || (parsedObjFile[i + 4] == "vn") || (parsedObjFile[i + 4] == "f") || (parsedObjFile[i + 4] == "#"))
+			if ((parsedObjFile[i + 4] == "v") || (parsedObjFile[i + 4] == "vn") || (parsedObjFile[i + 4] == "f") || (parsedObjFile[i + 4] == "#"))
 			{
-				tempVertex.P.x = std::stod(parsedObjFile[i + 1]) * 650;
-				tempVertex.P.y = std::stod(parsedObjFile[i + 2]) * 650;
-				tempVertex.P.z = std::stod(parsedObjFile[i + 3]) * 650;
+				tempVertex.P.x = std::stod(parsedObjFile[i + 1]) * 217;
+				tempVertex.P.y = std::stod(parsedObjFile[i + 2]) * 217;
+				tempVertex.P.z = std::stod(parsedObjFile[i + 3]) * 217;
 				tempVertex.P.w = 1;
 				tempVertex.colour.r = 255;
 				tempVertex.colour.g = 255;
@@ -1536,9 +1527,9 @@ void Client::transformObjFile(iMatrix currentMatrix, bool setAmb)
 		}
 		else if (parsedObjFile[i] == "vn")
 		{
-			tempNormal.P.x = std::stod(parsedObjFile[i + 1]) * 650;
-			tempNormal.P.y = std::stod(parsedObjFile[i + 2]) * 650;
-			tempNormal.P.z = std::stod(parsedObjFile[i + 3]) * 650;
+			tempNormal.P.x = std::stod(parsedObjFile[i + 1]) * 217;
+			tempNormal.P.y = std::stod(parsedObjFile[i + 2]) * 217;
+			tempNormal.P.z = std::stod(parsedObjFile[i + 3]) * 217;
 			objNormalArray.push_back(tempNormal);
 		}
 		else if (parsedObjFile[i] == "f")

@@ -14,6 +14,7 @@
 
 typedef enum {ONE, TWO, THREE, FOUR} Panel;
 typedef enum {OctOne, OctTwo, OctThree, OctFour, OctFive, OctSix, OctSeven, OctEight} Octant;
+typedef enum {Phong, Gouraud, Flat} Shading;
 
 struct grid 
 {
