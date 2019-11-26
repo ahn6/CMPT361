@@ -24,7 +24,7 @@ c) Save & recompile
 
 ### Algorithms
 
-#### Digital Analyzer Algorithm (DDA)
+#### Digital Differential Analyzer Algorithm (DDA)
 The DDA uses the y-intercept equation y = mx + b as its main calculation for plotting. There are 2 major cases with 2 sub cases each:
 
 1) __If slope is less than 1__, iterate on x while calculate and round up y in every iteration
