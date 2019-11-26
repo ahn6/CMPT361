@@ -52,7 +52,7 @@ The method that is implemented considers all 8 octants is split into 2 major par
 1) __If (y2 - y1 > 0)__ --> Octants: 1 2 3 4 2)
 2) __If (y2 - y1 < 0)__ --> Octants: 5 6 7 8 
 
-Lines in each octant are then calculated and drawned based on the incremental steps (dx or dy) and where the end points and start points lie in the the panel
+Lines in each octant are then calculated and drawn based on the incremental steps (dx or dy) and where the end points and start points lie in the panel
 
 ## Tests
 
