@@ -29,7 +29,7 @@ https://www.javatpoint.com/computer-graphics-dda-algorithm
 
 The DDA uses the y-intercept equation y = mx + b as its main calculation for plotting. There are 2 major cases with 2 sub cases each:
 
-1) __If slope is less than 1__, iterate on x while calculate and round up y in every iteration
+1) __If the slope is less than 1__, iterate on x while y is calculated and rounded up in every iteration
 
     a) If __dx > 0__, the endpoint x is greater than the initial point x0 so the y calculation can be done        while increasing x to the endpoint. 
     ex: initial point (200,200), endpoint (300,250))
@@ -37,7 +37,7 @@ The DDA uses the y-intercept equation y = mx + b as its main calculation for plo
     b) If __dx < 0__, the endpoint x is less than the initial point x0 so y calculation can be done while     decreasing x to the endpoint.
     ex: initial point(200,200), endpoint (-100,250)
     
-2) __if slope is greater than 1__, iterate on y while calculate and round up x in every iteration
+2) __if the slope is greater than 1__, iterate on y while y is calculated and rounded up in every iteration
 
     a) If __dy is > 0__, the endpoint y is greater than the initial point y0 so x calculation cane be done        while increasing y to the endpoint.  
     ex: centre (200,200), endpoint (250,300)
