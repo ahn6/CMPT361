@@ -98,7 +98,7 @@ If there is, we can determine which side stays constant in terms of x.
 More information on the corner cases is documented inside the polygonRenderer(...) function.
 
 ### Page 5: alteredFilledPolygonTest(..) 
-Same as Page 4, but change in opacity.
+This test is the same as Page 4: filledPolygonTest(..) except with a change in opacity.
 
 
 -------------------------
