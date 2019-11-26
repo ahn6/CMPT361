@@ -12,10 +12,10 @@ This program was also tested on Ubuntu with QtCreater (Version is same as SFU CS
 
 #### Build steps
 1) Open the qtqt.pro project file 
-2) Some of the methods in this project requires C++11 in Qt Creator. I've made sure that this project file does include C++11, but in the event that it is not included.. 
-a) Open the qtqt.pro in the text editor 
-b) Somewhere near the top (ex: Under "TEMPLATE = app") include the following "CONFIG += c++11" 
-c) Save & recompile 
+2) Some of the methods in this project requires C++11 in Qt Creator. I have made sure that this project file includes C++11. In the event that it is not included: 
+    - a) Open the qtqt.pro in the text editor 
+    - b) Somewhere near the top (ex: Under "TEMPLATE = app") include the following "CONFIG += c++11" 
+    - c) Save and recompile 
 3) Add all the headers and .cpp files 
 4) Run 
 
@@ -85,11 +85,11 @@ This test had similar implementation for each panel
 The main task of this test was to create a function that can create triangles (polygons) using our line algorithm. The helper function created to generate a triangle uses the Bresenham line drawer and horizontal scan lines. 
 1) Organize the three coordinates from highest Y value to lowest Y value 
 2) The general idea of horizontal scan lines is to:
-   a) Start from the highest Y value then
-   b) Increment Y 
-   c) Calculate the x left value using x = (y - b) / m (LEFT SIDE) 
-   d) Calculate the x right value using x = (y - b) / m (RIGHT SIDE) 
-   e) Draw a horizontal line from x left to x right using the same Y value 
+    - a) Start from the highest Y value then
+    - b) Increment Y 
+    - c) Calculate the x left value using x = (y - b) / m (LEFT SIDE) 
+    - d) Calculate the x right value using x = (y - b) / m (RIGHT SIDE) 
+    - e) Draw a horizontal line from x left to x right using the same Y value 
 
 Consider some corner cases. Vertical lines give an undefined slope. We do not need to figure out x left or x right.
 One of the cases considered:
