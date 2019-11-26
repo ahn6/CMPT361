@@ -29,7 +29,7 @@ The DDA uses the y-intercept equation y = mx + b as its main calculation for plo
 
 1) __If slope is less than 1__, iterate on x while calculate and round up y in every iteration
 
-    a) If __dx > 0__, the endpoint x is greater than the initial point x0 so y calculation cane be done        while increasing x to the endpoint. 
+    a) If __dx > 0__, the endpoint x is greater than the initial point x0 so the y calculation can be done        while increasing x to the endpoint. 
     ex: initial point (200,200), endpoint (300,250))
 
     b) If __dx < 0__, the endpoint x is less than the initial point x0 so y calculation can be done while     decreasing x to the endpoint.
