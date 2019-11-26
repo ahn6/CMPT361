@@ -12,10 +12,10 @@ This program was also tested on Ubuntu with QtCreater (Version is same as SFU CS
 
 #### Build steps
 1) Open the qtqt.pro project file 
-2) Some of the methods in this project requires C++11 in Qt Creator. I've made sure that this project file does include C++11, but in the event that it is not included.. 
-a) Open the qtqt.pro in the text editor 
-b) Somewhere near the top (ex: Under "TEMPLATE = app") include the following "CONFIG += c++11" 
-c) Save & recompile 
+2) Some of the methods in this project requires C++11 in Qt Creator. I have made sure that this project file includes C++11. In the event that it is not included: 
+    - a) Open the qtqt.pro in the text editor 
+    - b) Somewhere near the top (ex: Under "TEMPLATE = app") include the following "CONFIG += c++11" 
+    - c) Save and recompile 
 3) Add all the headers and .cpp files 
 4) Run 
 
@@ -24,18 +24,20 @@ c) Save & recompile
 
 ### Algorithms
 
-#### Digital Analyzer Algorithm (DDA)
+#### Digital Differential Analyzer Algorithm (DDA)
+https://www.javatpoint.com/computer-graphics-dda-algorithm
+
 The DDA uses the y-intercept equation y = mx + b as its main calculation for plotting. There are 2 major cases with 2 sub cases each:
 
-1) __If slope is less than 1__, iterate on x while calculate and round up y in every iteration
+1) __If the slope is less than 1__, iterate on x while y is calculated and rounded up in every iteration
 
-    a) If __dx > 0__, the endpoint x is greater than the initial point x0 so y calculation cane be done        while increasing x to the endpoint. 
+    a) If __dx > 0__, the endpoint x is greater than the initial point x0 so the y calculation can be done        while increasing x to the endpoint. 
     ex: initial point (200,200), endpoint (300,250))
 
     b) If __dx < 0__, the endpoint x is less than the initial point x0 so y calculation can be done while     decreasing x to the endpoint.
     ex: initial point(200,200), endpoint (-100,250)
     
-2) __if slope is greater than 1__, iterate on y while calculate and round up x in every iteration
+2) __if the slope is greater than 1__, iterate on y while y is calculated and rounded up in every iteration
 
     a) If __dy is > 0__, the endpoint y is greater than the initial point y0 so x calculation cane be done        while increasing y to the endpoint.  
     ex: centre (200,200), endpoint (250,300)
@@ -44,7 +46,9 @@ The DDA uses the y-intercept equation y = mx + b as its main calculation for plo
     ex: centre (200,200), endpoint (250,-100)
 
 ####  Bresenham Algorithm
-Bresenham algorithm takes decision parameters (t2, err) and deciding whether to increment x alone or y & x. Unlike DDA, Bresenham does not use floating point variables so its run time is a lot faster. In simple terms, if the err which is calculated by 2dy - dx 
+https://www.javatpoint.com/computer-graphics-bresenhams-line-algorithm
+
+Bresenham algorithm takes decision parameters (t2, err) and decides whether to increment x alone or y and x. Unlike DDA, Bresenham does not use floating point variables. The run time is quicker. There are two scenarios for the err, which is calculated by 2dy - dx: 
 1) __err < 0__ then __err = err + 2dy__ (Only increment x) 
 2) __err > 0__ then __err = err + t2__ (x and y increment)
 
@@ -52,11 +56,11 @@ The method that is implemented considers all 8 octants is split into 2 major par
 1) __If (y2 - y1 > 0)__ --> Octants: 1 2 3 4 2)
 2) __If (y2 - y1 < 0)__ --> Octants: 5 6 7 8 
 
-Lines in each octant are then calculated and drawned based on the incremental steps (dx or dy) and where the end points and start points lie in the the panel
+Lines in each octant are then calculated and drawn based on the incremental steps (dx or dy) and where the end points and start points lie in the panel
 
 ## Tests
 
-Each test page is seperated in their own helper function (ex: starBurstTest(..), parallelogramTest(..), etc)
+Each test page is separated into their own helper function for better organization and clarity (ex: starBurstTest(..), parallelogramTest(..), etc.)
 
 ### Page 1: starBurstTest(..) 
 This test had similar implementation for each panel 
@@ -80,17 +84,21 @@ This test had similar implementation for each panel
 ### Page 4: filledPolygonTest(..) 
 The main task of this test was to create a function that can create triangles (polygons) using our line algorithm. The helper function created to generate a triangle uses the Bresenham line drawer and horizontal scan lines. 
 1) Organize the three coordinates from highest Y value to lowest Y value 
-2) The general idea of horizontal scan lines is to start from the highest Y value then
-a) Increment Y 
-b) Calculate the x left value using x = (y - b) / m (LEFT SIDE) 
-c) Calculate the x right value using x = (y - b) / m (RIGHT SIDE) 
-d) Draw a horizontal line from x left to x right using the same Y value 
+2) The general idea of horizontal scan lines is to:
+    - a) Start from the highest Y value then
+    - b) Increment Y 
+    - c) Calculate the x left value using x = (y - b) / m (LEFT SIDE) 
+    - d) Calculate the x right value using x = (y - b) / m (RIGHT SIDE) 
+    - e) Draw a horizontal line from x left to x right using the same Y value 
 
-Consider some corner cases. Vertical lines gives an undefined slope. So we don't need to figure out the x left/x right, the following list is the cases I considered - Is there a left or right verical line? If there is, we can determine which side to stay constant in terms of x.
-Some more information are commented inside the polygonRenderer(..) function in terms of corner cases.
+Consider some corner cases. Vertical lines give an undefined slope. We do not need to figure out x left or x right.
+One of the cases considered:
+- Is there a left or right vertical line?
+If there is, we can determine which side stays constant in terms of x. 
+More information on the corner cases is documented inside the polygonRenderer(...) function.
 
 ### Page 5: alteredFilledPolygonTest(..) 
-Same as Page 4, but change in opacity.
+This test is the same as Page 4: filledPolygonTest(..) except with a change in opacity.
 
 
 -------------------------
@@ -102,7 +110,12 @@ Each page consists of 4 panels and each panel uses a different redering algorith
 3) Draw the triangle
 
 ### Panel Two 
-The grid that is set up is calculated as follows The panel starts at (400,50) The panel ends at (700,350) Total panel size is 300x300 pixels and outside Margin is 15 pixels. Each square is 30x30 pixels 
+The grid that is set up is calculated as follows:
+- The panel starts at (400,50) 
+- The panel ends at (700,350) 
+- The total panel size is 300x300 pixels
+- The outside Margin is 15 pixels
+- Each square is 30x30 pixels 
 1) Store all these points in a 2D array 
 2) Draw the associated triangles as we have information of all points in our array
 
