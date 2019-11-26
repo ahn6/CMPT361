@@ -60,7 +60,7 @@ Lines in each octant are then calculated and drawn based on the incremental step
 
 ## Tests
 
-Each test page is seperated in their own helper function (ex: starBurstTest(..), parallelogramTest(..), etc)
+Each test page is separated into their own helper function for better organization and clarity (ex: starBurstTest(..), parallelogramTest(..), etc.)
 
 ### Page 1: starBurstTest(..) 
 This test had similar implementation for each panel 
