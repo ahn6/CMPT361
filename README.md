@@ -84,11 +84,12 @@ This test had similar implementation for each panel
 ### Page 4: filledPolygonTest(..) 
 The main task of this test was to create a function that can create triangles (polygons) using our line algorithm. The helper function created to generate a triangle uses the Bresenham line drawer and horizontal scan lines. 
 1) Organize the three coordinates from highest Y value to lowest Y value 
-2) The general idea of horizontal scan lines is to start from the highest Y value then
-a) Increment Y 
-b) Calculate the x left value using x = (y - b) / m (LEFT SIDE) 
-c) Calculate the x right value using x = (y - b) / m (RIGHT SIDE) 
-d) Draw a horizontal line from x left to x right using the same Y value 
+2) The general idea of horizontal scan lines is to:
+   a) Start from the highest Y value then
+   b) Increment Y 
+   c) Calculate the x left value using x = (y - b) / m (LEFT SIDE) 
+   d) Calculate the x right value using x = (y - b) / m (RIGHT SIDE) 
+   e) Draw a horizontal line from x left to x right using the same Y value 
 
 Consider some corner cases. Vertical lines gives an undefined slope. So we don't need to figure out the x left/x right, the following list is the cases I considered - Is there a left or right verical line? If there is, we can determine which side to stay constant in terms of x.
 Some more information are commented inside the polygonRenderer(..) function in terms of corner cases.
