@@ -110,7 +110,12 @@ Each page consists of 4 panels and each panel uses a different redering algorith
 3) Draw the triangle
 
 ### Panel Two 
-The grid that is set up is calculated as follows The panel starts at (400,50) The panel ends at (700,350) Total panel size is 300x300 pixels and outside Margin is 15 pixels. Each square is 30x30 pixels 
+The grid that is set up is calculated as follows:
+- The panel starts at (400,50) 
+- The panel ends at (700,350) 
+- The total panel size is 300x300 pixels
+- The outside Margin is 15 pixels
+- Each square is 30x30 pixels 
 1) Store all these points in a 2D array 
 2) Draw the associated triangles as we have information of all points in our array
 
