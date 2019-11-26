@@ -46,6 +46,8 @@ The DDA uses the y-intercept equation y = mx + b as its main calculation for plo
     ex: centre (200,200), endpoint (250,-100)
 
 ####  Bresenham Algorithm
+https://www.javatpoint.com/computer-graphics-bresenhams-line-algorithm
+
 Bresenham algorithm takes decision parameters (t2, err) and decides whether to increment x alone or y and x. Unlike DDA, Bresenham does not use floating point variables so its run time is a lot faster. In simple terms, if the err which is calculated by 2dy - dx 
 1) __err < 0__ then __err = err + 2dy__ (Only increment x) 
 2) __err > 0__ then __err = err + t2__ (x and y increment)
