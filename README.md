@@ -91,8 +91,11 @@ The main task of this test was to create a function that can create triangles (p
    d) Calculate the x right value using x = (y - b) / m (RIGHT SIDE) 
    e) Draw a horizontal line from x left to x right using the same Y value 
 
-Consider some corner cases. Vertical lines gives an undefined slope. So we don't need to figure out the x left/x right, the following list is the cases I considered - Is there a left or right verical line? If there is, we can determine which side to stay constant in terms of x.
-Some more information are commented inside the polygonRenderer(..) function in terms of corner cases.
+Consider some corner cases. Vertical lines give an undefined slope. We do not need to figure out x left or x right.
+One of the cases considered:
+- Is there a left or right vertical line?
+If there is, we can determine which side stays constant in terms of x. 
+More information on the corner cases is documented inside the polygonRenderer(...) function.
 
 ### Page 5: alteredFilledPolygonTest(..) 
 Same as Page 4, but change in opacity.
